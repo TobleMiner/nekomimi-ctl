@@ -12,6 +12,8 @@
 #include <driver/spi_master.h> 
 #include <string.h>
 
+#include "tlc.h"
+
 #define GPIO_PWM_CLK_OUT 32
 #define GPIO_DATA_LATCH  33
 #define GPIO_BLANK       25
@@ -41,95 +43,8 @@ void gpio_output(uint8_t gpio) {
   gpio_config(&conf);
 }
 
-struct pwm {
-  uint16_t val:12;
-} __attribute__((packed));
-
-#define PWM_CHAN(name)\
-  uint16_t name##_r:12;\
-  uint16_t name##_g:12;\
-  uint16_t name##_b:12;
-
-union tlc_pwm {
-  struct {
-    PWM_CHAN(pwm_0);
-    PWM_CHAN(pwm_1);
-    PWM_CHAN(pwm_2);
-    PWM_CHAN(pwm_3);
-    PWM_CHAN(pwm_4);
-    PWM_CHAN(pwm_5);
-    PWM_CHAN(pwm_6);
-    PWM_CHAN(pwm_7);
-  } __attribute__((packed));
-  uint8_t data[36];
-} __attribute__((packed));
-
-union {
-  struct {
-    union tlc_pwm tlc1;
-    union tlc_pwm tlc2
-  } __attribute__((packed)) tlcs;
-  uint8_t data[72];
-} tlc_pwm2;
-
-struct doc_channel {
-  uint8_t r:7;
-  uint8_t g:7;
-  uint8_t b:7;
-} __attribute__((packed));
-
-#pragma pack(1)
-
-#define DOC_CHAN(name)\
-  uint8_t name##_r:7;\
-  uint8_t name##_g:7;\
-  uint8_t name##_b:7;
-
-struct tlc_dc {
-  union {
-    struct {
-      DOC_CHAN(doc_0);
-      DOC_CHAN(doc_1);
-      DOC_CHAN(doc_2);
-      DOC_CHAN(doc_3);
-      DOC_CHAN(doc_4);
-      DOC_CHAN(doc_5);
-      DOC_CHAN(doc_6);
-      DOC_CHAN(doc_7);
-    } __attribute__((packed));
-    uint8_t data[21];
-  } __attribute__((packed)) doc;
-
-  uint8_t gbc_r:8;
-  uint8_t gbc_g:8;
-  uint8_t gbc_b:8;
-
-  uint8_t doc_range_r:1;
-  uint8_t doc_range_g:1;
-  uint8_t doc_range_b:1;
-  uint8_t repeat:1;
-  uint8_t timer_rst:1;
-  uint8_t gs_cnt_mode:2;
-
-  uint32_t user_data:17;
-/* Virtual extension during shift-out
-  uint8_t thermal_shdn:1;
-  uint8_t short_r:8;
-  uint8_t short_g:8;
-  uint8_t short_b:8;
-  uint8_t open_r:8;
-  uint8_t open_g:8;
-  uint8_t open_b:8;
-*/
-} __attribute__((packed));
-
-union {
-  struct {
-    struct tlc_dc tlc1;
-    struct tlc_dc tlc2;
-  } __attribute__((packed)) tlcs;
-  uint8_t data[54];
-} tlc_dc2;
+TLC_DECLARE_PWM_CHAIN(tlc_pwm2, 2);
+TLC_DECLARE_DC_CHAIN(tlc_dc2, 2);
 
 void tlc_dc_init(struct tlc_dc* dc) {
   memset(dc, 0, sizeof(*dc));
@@ -289,85 +204,69 @@ void app_main(void) {
   printf("Size of TLC DC is %zu bytes\n", sizeof(struct tlc_dc));
   printf("Size of TLC DC DOC is %zu bytes\n", sizeof((((struct tlc_dc*)(void*)0))->doc));
 
-  uint8_t gs_data[36];
-  uint8_t dc_data[54];
-
-//  memset(gs_data, 0xFF, sizeof(gs_data));
-//  memset(dc_data, 0xFF, sizeof(dc_data));
-//  memset(gs_data, 0x42, sizeof(gs_data));
-//  memset(dc_data, 0x42, sizeof(dc_data));
-
-  for(int i = 0; i < sizeof(gs_data); i++) {
-    gs_data[i] = i;
-  }
-
-  for(int i = 0; i < sizeof(dc_data); i++) {
-    dc_data[i] = i;
-  }
-
-  memset(gs_data, 0b01010101, sizeof(gs_data));
-  memset(dc_data, 0b01010101, sizeof(dc_data));
+  uint8_t gs_data[72];
   memset(gs_data, 0xFF, sizeof(gs_data));
-  memset(dc_data, 0xFF, sizeof(dc_data));
 
-  memset(tlc_pwm2.data, 0xFF, sizeof(tlc_pwm2.data));
+  memset(tlc_pwm2.data, 0x00, sizeof(tlc_pwm2.data));
 
   printf("Transfer size will be %u\n", sizeof(tlc_pwm2.data) * 8);
 
   struct spi_transaction_t trans_gs = {
-    .length = sizeof(tlc_pwm2.data) * 8,
-    .tx_buffer = tlc_pwm2.data
-  };
-
-  struct spi_transaction_t trans_dc = {
-    .length = sizeof(tlc_dc2.data) * 8,
-    .tx_buffer = tlc_dc2.data
+    .length = sizeof(gs_data) * 8,
+    .tx_buffer = gs_data
   };
 
   HI(GPIO_BLANK);
 
-//  dc_data[sizeof(dc_data) - 24 - 27 - 1] &= ~(1<<(8 - 4 - 1));
-//  dc_data[sizeof(dc_data) - 24 - 1] &= ~(1<<(8 - 4 - 1));
-//  dc_data[0] = 128;
-//  spi_device_transmit(spi_dev_dc, &trans_dc);
+/*
+  tlc_pwm2.tlc0.pwm_7_r = 0xFFF;
+  tlc_pwm2.tlc0.pwm_7_g = 0xFFF;
+  tlc_pwm2.tlc0.pwm_7_b = 0xFFF;
+*/
+  tlc_pwm2.tlc0.pwm_4_r = 0x0;
+  tlc_pwm2.tlc0.pwm_2_g = 0x0;
+  tlc_pwm2.tlc1.pwm_4_b = 0x0;
+  tlc_pwm2.tlc1.pwm_1_g = 0x0;
+  tlc_pwm2.tlc1.pwm_7_g = 0xFFF;
 
-//  tlc_pwm2.tlcs.tlc1.pwm_0_r = 127;
-
-  tlc_dc_init(&tlc_dc2.tlcs.tlc1);
-  tlc_dc_init(&tlc_dc2.tlcs.tlc2);
+  tlc_dc_init(&tlc_dc2.tlc0);
+  tlc_dc_init(&tlc_dc2.tlc1);
 
   uint8_t dimval = 5;
 
-  DOC_RANGE_LO(tlc_dc2.tlcs.tlc1);
-  DOC_RANGE_LO(tlc_dc2.tlcs.tlc2);
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_0, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_1, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_2, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_3, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_4, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_5, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_6, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_7, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_0, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_1, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_2, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_3, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_4, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_5, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_6, dimval)
-  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_7, dimval)
-
+/*
+  DOC_RANGE_LO(tlc_dc2.tlc0);
+  DOC_RANGE_LO(tlc_dc2.tlc1);
+  DOC_SET(tlc_dc2.tlc0.doc.doc_0, dimval)
+  DOC_SET(tlc_dc2.tlc0.doc.doc_1, dimval)
+  DOC_SET(tlc_dc2.tlc0.doc.doc_2, dimval)
+  DOC_SET(tlc_dc2.tlc0.doc.doc_3, dimval)
+  DOC_SET(tlc_dc2.tlc0.doc.doc_4, dimval)
+  DOC_SET(tlc_dc2.tlc0.doc.doc_5, dimval)
+  DOC_SET(tlc_dc2.tlc0.doc.doc_6, dimval)
+  DOC_SET(tlc_dc2.tlc0.doc.doc_7, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_0, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_1, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_2, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_3, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_4, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_5, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_6, dimval)
+  DOC_SET(tlc_dc2.tlc1.doc.doc_7, dimval)
+*/
   while(1) {  
     LO(GPIO_BLANK);
 //    spi_device_transmit(spi_dev_gs, &trans_gs);
+
     tlc_xmit(spi_dev_gs, tlc_pwm2.data, sizeof(tlc_pwm2.data));
     HI(GPIO_BLANK);
     HI(GPIO_DATA_LATCH);
     vTaskDelay(1 / portTICK_PERIOD_MS);
     LO(GPIO_DATA_LATCH);
+
     printf("Sending DC data\n");
     tlc_xmit(spi_dev_dc, tlc_dc2.data, sizeof(tlc_dc2.data));
-//    spi_device_transmit(spi_dev_dc, &trans_dc);
+
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
