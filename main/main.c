@@ -180,6 +180,21 @@ void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
   spi_device_transmit(spi, &trans);
 }
 
+#define DOC_SET(doc, val)\
+  do {\
+    doc##_r = (val);\
+    doc##_g = (val);\
+    doc##_b = (val);\
+  } while (0);
+
+#define DOC_RANGE_LO(doc)\
+  do {\
+    (doc).doc_range_r = 0;\
+    (doc).doc_range_g = 0;\
+    (doc).doc_range_b = 0;\
+  } while (0);
+  
+
 void app_main(void) {
   esp_err_t err;
 
@@ -295,7 +310,7 @@ void app_main(void) {
   memset(gs_data, 0xFF, sizeof(gs_data));
   memset(dc_data, 0xFF, sizeof(dc_data));
 
-  memset(tlc_pwm2.data, 0x00, sizeof(tlc_pwm2.data));
+  memset(tlc_pwm2.data, 0xFF, sizeof(tlc_pwm2.data));
 
   printf("Transfer size will be %u\n", sizeof(tlc_pwm2.data) * 8);
 
@@ -316,10 +331,31 @@ void app_main(void) {
 //  dc_data[0] = 128;
 //  spi_device_transmit(spi_dev_dc, &trans_dc);
 
-  tlc_pwm2.tlcs.tlc1.pwm_0_r = 127;
+//  tlc_pwm2.tlcs.tlc1.pwm_0_r = 127;
 
   tlc_dc_init(&tlc_dc2.tlcs.tlc1);
   tlc_dc_init(&tlc_dc2.tlcs.tlc2);
+
+  uint8_t dimval = 5;
+
+  DOC_RANGE_LO(tlc_dc2.tlcs.tlc1);
+  DOC_RANGE_LO(tlc_dc2.tlcs.tlc2);
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_0, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_1, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_2, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_3, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_4, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_5, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_6, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc1.doc.doc_7, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_0, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_1, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_2, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_3, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_4, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_5, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_6, dimval)
+  DOC_SET(tlc_dc2.tlcs.tlc2.doc.doc_7, dimval)
 
   while(1) {  
     LO(GPIO_BLANK);
