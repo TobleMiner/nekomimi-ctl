@@ -12,25 +12,96 @@
 #include <driver/spi_master.h> 
 #include <string.h>
 
+#include <math.h>
+
 #include "tlc.h"
+
+#include "fast_hsv2rgb.h"
 
 #define GPIO_PWM_CLK_OUT 32
 #define GPIO_DATA_LATCH  33
 #define GPIO_BLANK       25
 
-#define SPI_MODE 0
-
-#define LSB_FIRST
-#define REVERSE
+#define NUM_EARS 2
+#define NUM_TLCS (NUM_EARS * 2)
 
 esp_err_t event_handler(void *ctx, system_event_t *event) {
     return ESP_OK;
 }
 
-#define HI(gpio) (gpio_set_level((gpio), 1))
-#define LO(gpio) (gpio_set_level((gpio), 0))
+struct color {
+  uint8_t red;
+  uint8_t green;
+  uint8_t blue;
+};
 
-#define KHZ_TO_HZ(HZ) ((HZ) * 1000UL)
+#define COL_TO_PWM(c) (((uint16_t)(c)) << 0) // Not particularly exact but will do for now
+
+void ear_set_led_rgb(int ear, int led, uint8_t red, uint8_t green, uint8_t blue) {
+  struct tlc_pwm* pwm0 = &tlc.gs_data[ear * 2];
+  struct tlc_pwm* pwm1 = &tlc.gs_data[ear * 2 + 1];
+  switch(led) {
+    case 0:
+      pwm0->pwm_7_r = COL_TO_PWM(red);
+      pwm0->pwm_7_g = COL_TO_PWM(green);
+      pwm0->pwm_7_b = COL_TO_PWM(blue);
+      break;
+    case 1:
+      pwm0->pwm_6_r = COL_TO_PWM(red);
+      pwm0->pwm_6_g = COL_TO_PWM(green);
+      pwm0->pwm_6_b = COL_TO_PWM(blue);
+      break;
+    case 2:
+      pwm0->pwm_5_r = COL_TO_PWM(red);
+      pwm0->pwm_5_g = COL_TO_PWM(green);
+      pwm0->pwm_5_b = COL_TO_PWM(blue);
+      break;
+    case 3:
+      pwm0->pwm_3_r = COL_TO_PWM(red);
+      pwm0->pwm_3_g = COL_TO_PWM(green);
+      pwm0->pwm_3_b = COL_TO_PWM(blue);
+      break;
+    case 4:
+      pwm0->pwm_1_r = COL_TO_PWM(red);
+      pwm0->pwm_1_g = COL_TO_PWM(green);
+      pwm0->pwm_1_b = COL_TO_PWM(blue);
+      break;
+    case 5:
+      pwm0->pwm_0_r = COL_TO_PWM(red);
+      pwm0->pwm_0_g = COL_TO_PWM(green);
+      pwm0->pwm_0_b = COL_TO_PWM(blue);
+      break;
+    case 6:
+      pwm1->pwm_2_r = COL_TO_PWM(red);
+      pwm1->pwm_2_g = COL_TO_PWM(green);
+      pwm1->pwm_2_b = COL_TO_PWM(blue);
+      break;
+    case 7:
+      pwm1->pwm_3_r = COL_TO_PWM(red);
+      pwm1->pwm_3_g = COL_TO_PWM(green);
+      pwm1->pwm_3_b = COL_TO_PWM(blue);
+      break;
+    case 8:
+      pwm1->pwm_5_r = COL_TO_PWM(red);
+      pwm1->pwm_5_g = COL_TO_PWM(green);
+      pwm1->pwm_5_b = COL_TO_PWM(blue);
+      break;
+    case 9:
+      pwm1->pwm_6_r = COL_TO_PWM(red);
+      pwm1->pwm_6_g = COL_TO_PWM(green);
+      pwm1->pwm_6_b = COL_TO_PWM(blue);
+      break;
+    case 10:
+      pwm1->pwm_7_r = COL_TO_PWM(red);
+      pwm1->pwm_7_g = COL_TO_PWM(green);
+      pwm1->pwm_7_b = COL_TO_PWM(blue);
+      break;
+  };
+}
+
+void ear_set_led(int ear, int led, struct color col) {
+  ear_set_led_rgb(ear, led, col.red, col.green, col.blue);
+}
 
 void gpio_output(uint8_t gpio) {
   gpio_config_t conf = {
@@ -41,58 +112,6 @@ void gpio_output(uint8_t gpio) {
     .pull_up_en = 0
   };
   gpio_config(&conf);
-}
-
-TLC_DECLARE_PWM_CHAIN(tlc_pwm2, 2);
-TLC_DECLARE_DC_CHAIN(tlc_dc2, 2);
-
-void tlc_dc_init(struct tlc_dc* dc) {
-  memset(dc, 0, sizeof(*dc));
-  memset(dc->doc.data, 0xFF, sizeof(dc->doc.data));
-
-  dc->gbc_r = 127;
-  dc->gbc_g = 127;
-  dc->gbc_b = 127;
-
-  dc->doc_range_r = 1;
-  dc->doc_range_g = 1;
-  dc->doc_range_b = 1;
-  dc->repeat = 1;
-  dc->timer_rst = 0;
-  dc->gs_cnt_mode = 3;
-}
-
-void hexdump(uint8_t* data, size_t len) {
-  while(len-- > 0) {
-    printf("%02X ", *data++);
-  }
-  printf("\n");
-}
-
-uint8_t tlc_reverse_buffer[256];
-void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
-#ifdef REVERSE
-  printf("Initial: ");
-  hexdump((uint8_t*)data, len);
-  assert(len <= sizeof(tlc_reverse_buffer));
-  uint8_t* ptr = tlc_reverse_buffer;
-  size_t remain = len;
-  while(remain-- > 0) {
-    *ptr++ = ((uint8_t*)data)[remain];
-  }
-  printf("Reversed: ");
-  hexdump((uint8_t*)tlc_reverse_buffer, len);
-  struct spi_transaction_t trans = {
-    .length = len * 8,
-    .tx_buffer = tlc_reverse_buffer
-  };
-#else
-  struct spi_transaction_t trans = {
-    .length = len * 8,
-    .tx_buffer = data
-  };
-#endif
-  spi_device_transmit(spi, &trans);
 }
 
 #define DOC_SET(doc, val)\
@@ -113,161 +132,73 @@ void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
 void app_main(void) {
   esp_err_t err;
 
-  // Initialize main PWM clock
-  ledc_timer_config_t ledc_timer = {
-    .speed_mode = LEDC_HIGH_SPEED_MODE,
-    .timer_num  = LEDC_TIMER_0,
-    .bit_num    = 2,
-    .freq_hz    = 100000
-  };
- 
-  ledc_channel_config_t ledc_channel = {
-    .channel    = LEDC_CHANNEL_0,
-    .gpio_num   = GPIO_PWM_CLK_OUT,
-    .speed_mode = LEDC_HIGH_SPEED_MODE,
-    .timer_sel  = LEDC_TIMER_0,
-    .duty       = 2
-  };
- 
-  ledc_timer_config(&ledc_timer);
-  ledc_channel_config(&ledc_channel);
-
-  // General IO setup
-  gpio_output(GPIO_DATA_LATCH);
-  gpio_output(GPIO_BLANK);
-
-  // Initialize GS SPI
-  spi_bus_config_t buscfg_hspi = {
-    .miso_io_num = 12,
-    .mosi_io_num = 13,
-    .sclk_io_num = 14,
-    .quadwp_io_num = -1,
-    .quadhd_io_num = -1,
-    .max_transfer_sz = 1024
-  };
-
-  err = spi_bus_initialize(HSPI_HOST, &buscfg_hspi, 1);
-  printf("HSPI init finish, %d\n", err);
-  ESP_ERROR_CHECK(err);
-
-  spi_device_interface_config_t spi_devcfg_gs = {
-    .clock_speed_hz = KHZ_TO_HZ(100),
-    .mode = SPI_MODE,
-    .spics_io_num = (int)-1,
-    .queue_size = 8,
-    .flags = SPI_DEVICE_HALFDUPLEX
-  };
-
-#ifdef LSBFIRST
-  spi_devcfg_gs.flags |= SPI_DEVICE_TXBIT_LSBFIRST;
-#endif
-
-  printf("SPI CS pin: %d\n", spi_devcfg_gs.spics_io_num);
-
-  spi_device_handle_t spi_dev_gs;
-  err = spi_bus_add_device(HSPI_HOST, &spi_devcfg_gs, &spi_dev_gs);
-  printf("GS slave init finish, %d\n", err);
-  ESP_ERROR_CHECK(err);
-
-  // Initialize DC SPI
-  spi_bus_config_t buscfg_vspi = {
-    .miso_io_num = 19,
-    .mosi_io_num = 23,
-    .sclk_io_num = 18,
-    .quadwp_io_num = -1,
-    .quadhd_io_num = -1,
-    .max_transfer_sz = 1024
-  };
-
-  err = spi_bus_initialize(VSPI_HOST, &buscfg_vspi, 0);
-  printf("VSPI init finish, %d\n", err);
-  ESP_ERROR_CHECK(err);
-
-  spi_device_interface_config_t spi_devcfg_dc = {
-    .clock_speed_hz = KHZ_TO_HZ(100),
-    .mode = SPI_MODE,
-    .spics_io_num = (int)-1,
-    .queue_size = 8,
-    .flags = SPI_DEVICE_HALFDUPLEX
-  };
-
-#ifdef LSBFIRST
-  spi_devcfg_dc.flags |= SPI_DEVICE_TXBIT_LSBFIRST;
-#endif
-
-  spi_device_handle_t spi_dev_dc;
-  err = spi_bus_add_device(VSPI_HOST, &spi_devcfg_dc, &spi_dev_dc);
-  printf("DC slave init finish, %d\n", err);
-  ESP_ERROR_CHECK(err);
-
-  printf("Size of TLC PWM is %zu bytes\n", sizeof(union tlc_pwm));
+  printf("Size of TLC PWM is %zu bytes\n", sizeof(struct tlc_pwm));
   printf("Size of TLC DC is %zu bytes\n", sizeof(struct tlc_dc));
   printf("Size of TLC DC DOC is %zu bytes\n", sizeof((((struct tlc_dc*)(void*)0))->doc));
 
-  uint8_t gs_data[72];
-  memset(gs_data, 0xFF, sizeof(gs_data));
+  ESP_LOGI("TLC", "Initialitzing ...");
+  ESP_ERROR_CHECK(tlc_init(NUM_TLCS, GPIO_PWM_CLK_OUT, GPIO_DATA_LATCH, GPIO_BLANK, HSPI_HOST, VSPI_HOST));
+  ESP_LOGI("TLC", "Initialized");
 
-  memset(tlc_pwm2.data, 0x00, sizeof(tlc_pwm2.data));
-
-  printf("Transfer size will be %u\n", sizeof(tlc_pwm2.data) * 8);
-
-  struct spi_transaction_t trans_gs = {
-    .length = sizeof(gs_data) * 8,
-    .tx_buffer = gs_data
-  };
-
-  HI(GPIO_BLANK);
+//  memset(tlc.gs_data, 0x00, sizeof(struct tlc_pwm) * tlc.chain_len);
 
 /*
-  tlc_pwm2.tlc0.pwm_7_r = 0xFFF;
-  tlc_pwm2.tlc0.pwm_7_g = 0xFFF;
-  tlc_pwm2.tlc0.pwm_7_b = 0xFFF;
-*/
-  tlc_pwm2.tlc0.pwm_4_r = 0x0;
-  tlc_pwm2.tlc0.pwm_2_g = 0x0;
-  tlc_pwm2.tlc1.pwm_4_b = 0x0;
-  tlc_pwm2.tlc1.pwm_1_g = 0x0;
-  tlc_pwm2.tlc1.pwm_7_g = 0xFFF;
+  tlc.gs_data[0].pwm_7_r = 0xFFF;
+  tlc.gs_data[0].pwm_7_g = 0xFFF;
+  tlc.gs_data[0].pwm_7_b = 0xFFF;
 
-  tlc_dc_init(&tlc_dc2.tlc0);
-  tlc_dc_init(&tlc_dc2.tlc1);
+  tlc.gs_data[0].pwm_4_r = 0x0;
+  tlc.gs_data[0].pwm_2_g = 0x0;
+  tlc.gs_data[1].pwm_4_b = 0x0;
+  tlc.gs_data[1].pwm_1_g = 0x0;
+  tlc.gs_data[1].pwm_7_g = 0xFFF;
+*/
 
   uint8_t dimval = 5;
 
-/*
-  DOC_RANGE_LO(tlc_dc2.tlc0);
-  DOC_RANGE_LO(tlc_dc2.tlc1);
-  DOC_SET(tlc_dc2.tlc0.doc.doc_0, dimval)
-  DOC_SET(tlc_dc2.tlc0.doc.doc_1, dimval)
-  DOC_SET(tlc_dc2.tlc0.doc.doc_2, dimval)
-  DOC_SET(tlc_dc2.tlc0.doc.doc_3, dimval)
-  DOC_SET(tlc_dc2.tlc0.doc.doc_4, dimval)
-  DOC_SET(tlc_dc2.tlc0.doc.doc_5, dimval)
-  DOC_SET(tlc_dc2.tlc0.doc.doc_6, dimval)
-  DOC_SET(tlc_dc2.tlc0.doc.doc_7, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_0, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_1, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_2, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_3, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_4, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_5, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_6, dimval)
-  DOC_SET(tlc_dc2.tlc1.doc.doc_7, dimval)
-*/
-  while(1) {  
-    LO(GPIO_BLANK);
-//    spi_device_transmit(spi_dev_gs, &trans_gs);
+  for(int i = 0; i < NUM_TLCS; i++) {
+    DOC_RANGE_LO(tlc.dc_data[i]);
+    DOC_SET(tlc.dc_data[i].doc.doc_0, dimval)
+    DOC_SET(tlc.dc_data[i].doc.doc_1, dimval)
+    DOC_SET(tlc.dc_data[i].doc.doc_2, dimval)
+    DOC_SET(tlc.dc_data[i].doc.doc_3, dimval)
+    DOC_SET(tlc.dc_data[i].doc.doc_4, dimval)
+    DOC_SET(tlc.dc_data[i].doc.doc_5, dimval)
+    DOC_SET(tlc.dc_data[i].doc.doc_6, dimval)
+    DOC_SET(tlc.dc_data[i].doc.doc_7, dimval)
+  }
 
-    tlc_xmit(spi_dev_gs, tlc_pwm2.data, sizeof(tlc_pwm2.data));
-    HI(GPIO_BLANK);
-    HI(GPIO_DATA_LATCH);
-    vTaskDelay(1 / portTICK_PERIOD_MS);
-    LO(GPIO_DATA_LATCH);
+  xTaskCreate(tlc_update_task, "tlc_task", 4096, NULL, 12, NULL);
 
-    printf("Sending DC data\n");
-    tlc_xmit(spi_dev_dc, tlc_dc2.data, sizeof(tlc_dc2.data));
+  // Test pattern ~3.3 s per ear
+  for(int i = 0; i < NUM_EARS; i++) {
+    for(int j = 0; j < 11; j++) {
+      ear_set_led_rgb(i, j, 255, 0, 0);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      ear_set_led_rgb(i, j, 0, 255, 0);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      ear_set_led_rgb(i, j, 0, 0, 255);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      ear_set_led_rgb(i, j, 0, 0, 0);
+    }
+  }
 
+  int offset = 0;
+  int steps_per_led = HSV_HUE_STEPS / (11 * NUM_EARS);
 
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  while(1) {
+    for(int i = 0; i < NUM_EARS; i++) {
+      for(int j = 0; j < 11; j++) {
+        uint8_t r, g, b;
+        fast_hsv2rgb_32bit((offset + (i * 11 * steps_per_led) + j * steps_per_led) % HSV_HUE_STEPS, HSV_SAT_MAX, HSV_VAL_MAX, &r, &g, &b);
+        ear_set_led_rgb(i, j, r, g, b);
+      }
+    }
+    offset += 10;
+    if(offset >= HSV_HUE_MAX) {
+      offset = 0;
+    }
+    
+    vTaskDelay(25 / portTICK_PERIOD_MS);
   }
 }
