@@ -25,6 +25,16 @@
 #define NUM_EARS 2
 #define NUM_TLCS (NUM_EARS * 2)
 
+#define DIM 10
+
+#define DIM_IS_LOW_RANGE ((DIM) < 66)
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
+#define CLAMP(x, h, l) (max(min((x), (l)), (h)))
+
+
 esp_err_t event_handler(void *ctx, system_event_t *event) {
     return ESP_OK;
 }
@@ -154,10 +164,15 @@ void app_main(void) {
   tlc.gs_data[1].pwm_7_g = 0xFFF;
 */
 
-  uint8_t dimval = 5;
+#ifdef DIM
+  uint8_t dimval = (uint8_t)CLAMP((DIM_IS_LOW_RANGE ? (((float)DIM) / 0.667) : ((((float)DIM) - 33.3) / 0.527559055)) / 100.0 * 127.0, 0, 127);
+  ESP_LOGI("DIMMING", "Dimming to %d %%, val = %u", DIM, dimval);
 
   for(int i = 0; i < NUM_TLCS; i++) {
+#if DIM_IS_LOW_RANGE
+    ESP_LOGI("DIMMING", "Using low dimming range");
     DOC_RANGE_LO(tlc.dc_data[i]);
+#endif
     DOC_SET(tlc.dc_data[i].doc.doc_0, dimval)
     DOC_SET(tlc.dc_data[i].doc.doc_1, dimval)
     DOC_SET(tlc.dc_data[i].doc.doc_2, dimval)
@@ -167,6 +182,7 @@ void app_main(void) {
     DOC_SET(tlc.dc_data[i].doc.doc_6, dimval)
     DOC_SET(tlc.dc_data[i].doc.doc_7, dimval)
   }
+#endif
 
   xTaskCreate(tlc_update_task, "tlc_task", 4096, NULL, 12, NULL);
 
