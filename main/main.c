@@ -25,6 +25,8 @@
 #define NUM_EARS 2
 #define NUM_TLCS (NUM_EARS * 2)
 
+#define NUM_LEDS_PER_EAR 12
+
 #define DIM 10
 
 #define DIM_IS_LOW_RANGE ((DIM) < 66)
@@ -82,26 +84,31 @@ void ear_set_led_rgb(int ear, int led, uint8_t red, uint8_t green, uint8_t blue)
       pwm0->pwm_0_b = COL_TO_PWM(blue);
       break;
     case 6:
+      pwm1->pwm_0_r = COL_TO_PWM(red);
+      pwm1->pwm_0_g = COL_TO_PWM(green);
+      pwm1->pwm_0_b = COL_TO_PWM(blue);
+      break;
+    case 7:
       pwm1->pwm_2_r = COL_TO_PWM(red);
       pwm1->pwm_2_g = COL_TO_PWM(green);
       pwm1->pwm_2_b = COL_TO_PWM(blue);
       break;
-    case 7:
+    case 8:
       pwm1->pwm_3_r = COL_TO_PWM(red);
       pwm1->pwm_3_g = COL_TO_PWM(green);
       pwm1->pwm_3_b = COL_TO_PWM(blue);
       break;
-    case 8:
+    case 9:
       pwm1->pwm_5_r = COL_TO_PWM(red);
       pwm1->pwm_5_g = COL_TO_PWM(green);
       pwm1->pwm_5_b = COL_TO_PWM(blue);
       break;
-    case 9:
+    case 10:
       pwm1->pwm_6_r = COL_TO_PWM(red);
       pwm1->pwm_6_g = COL_TO_PWM(green);
       pwm1->pwm_6_b = COL_TO_PWM(blue);
       break;
-    case 10:
+    case 11:
       pwm1->pwm_7_r = COL_TO_PWM(red);
       pwm1->pwm_7_g = COL_TO_PWM(green);
       pwm1->pwm_7_b = COL_TO_PWM(blue);
@@ -188,7 +195,7 @@ void app_main(void) {
 
   // Test pattern ~3.3 s per ear
   for(int i = 0; i < NUM_EARS; i++) {
-    for(int j = 0; j < 11; j++) {
+    for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
       ear_set_led_rgb(i, j, 255, 0, 0);
       vTaskDelay(100 / portTICK_PERIOD_MS);
       ear_set_led_rgb(i, j, 0, 255, 0);
@@ -200,13 +207,13 @@ void app_main(void) {
   }
 
   int offset = 0;
-  int steps_per_led = HSV_HUE_STEPS / (11 * NUM_EARS);
+  int steps_per_led = HSV_HUE_STEPS / (NUM_LEDS_PER_EAR * NUM_EARS);
 
   while(1) {
     for(int i = 0; i < NUM_EARS; i++) {
-      for(int j = 0; j < 11; j++) {
+      for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
         uint8_t r, g, b;
-        fast_hsv2rgb_32bit((offset + (i * 11 * steps_per_led) + j * steps_per_led) % HSV_HUE_STEPS, HSV_SAT_MAX, HSV_VAL_MAX, &r, &g, &b);
+        fast_hsv2rgb_32bit((offset + (i * NUM_LEDS_PER_EAR * steps_per_led) + j * steps_per_led) % HSV_HUE_STEPS, HSV_SAT_MAX, HSV_VAL_MAX, &r, &g, &b);
         ear_set_led_rgb(i, j, r, g, b);
       }
     }
