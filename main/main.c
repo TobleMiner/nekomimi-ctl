@@ -26,8 +26,12 @@
 #define NUM_TLCS (NUM_EARS * 2)
 
 #define NUM_LEDS_PER_EAR 12
+#define NUM_UV_PER_EAR 8
 
 #define DIM 10
+//#define UV
+#define COLOR_WHEEL
+//#define WHITE
 
 #define DIM_IS_LOW_RANGE ((DIM) < 66)
 
@@ -114,6 +118,37 @@ void ear_set_led_rgb(int ear, int led, uint8_t red, uint8_t green, uint8_t blue)
       pwm1->pwm_7_b = COL_TO_PWM(blue);
       break;
   };
+}
+
+void ear_set_led_uv(int ear, int led, uint8_t level) {
+  struct tlc_pwm* pwm0 = &tlc.gs_data[ear * 2];
+  struct tlc_pwm* pwm1 = &tlc.gs_data[ear * 2 + 1];
+  switch(led) {
+    case 0:
+      pwm0->pwm_4_g = COL_TO_PWM(level);
+      break;
+    case 1:
+      pwm0->pwm_4_r = COL_TO_PWM(level);
+      break;
+    case 2:
+      pwm0->pwm_2_r = COL_TO_PWM(level);
+      break;
+    case 3:
+      pwm0->pwm_2_g = COL_TO_PWM(level);
+      break;
+    case 4:
+      pwm1->pwm_1_g = COL_TO_PWM(level);
+      break;
+    case 5:
+      pwm1->pwm_1_r = COL_TO_PWM(level);
+      break;
+    case 6:
+      pwm1->pwm_4_b = COL_TO_PWM(level);
+      break;
+    case 7:
+      pwm1->pwm_4_r = COL_TO_PWM(level);
+      break;
+  }
 }
 
 void ear_set_led(int ear, int led, struct color col) {
@@ -206,10 +241,26 @@ void app_main(void) {
     }
   }
 
+  // Enable all UV LEDs
+  for(int i = 0; i < NUM_EARS; i++) {
+#ifdef UV
+    for(int j = 0; j < NUM_UV_PER_EAR; j++) {
+      printf("Enabling UV led %d %d\n", i, j);
+      ear_set_led_uv(i, j, 0xFF);
+    }
+#endif
+    for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
+#ifdef WHITE
+      ear_set_led_rgb(i, j, 255, 255, 255);      
+#endif
+    }
+  }
+
   int offset = 0;
   int steps_per_led = HSV_HUE_STEPS / (NUM_LEDS_PER_EAR * NUM_EARS);
 
   while(1) {
+#ifdef COLOR_WHEEL
     for(int i = 0; i < NUM_EARS; i++) {
       for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
         uint8_t r, g, b;
@@ -221,7 +272,7 @@ void app_main(void) {
     if(offset >= HSV_HUE_MAX) {
       offset = 0;
     }
-    
+#endif
     vTaskDelay(25 / portTICK_PERIOD_MS);
   }
 }
