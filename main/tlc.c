@@ -10,11 +10,6 @@
 
 #include "tlc.h"
 
-#define SPI_MODE 0
-#define LSB_FIRST
-#define REVERSE
-//#define XMIT_DEBUG
-
 #define KHZ_TO_HZ(HZ) ((HZ) * 1000UL)
 
 #define SPI_SPEED KHZ_TO_HZ(1000)
@@ -36,9 +31,9 @@ static void tlc_ctl_init(struct tlc_ctl* ctl) {
   memset(ctl, 0, sizeof(*ctl));
   memset(ctl->dc.data, 0xFF, sizeof(ctl->dc.data));
 
-  ctl->mcr = 0b101; // 19.1 mA
-  ctl->mcg = 0b101; // 19.1 mA
-  ctl->mcb = 0b101; // 19.1 mA
+  ctl->mcr = 0b100; // 19.1 mA
+  ctl->mcg = 0b100; // 19.1 mA
+  ctl->mcb = 0b100; // 19.1 mA
 
   ctl->bcr = 127;
   ctl->bcg = 127;
@@ -51,10 +46,11 @@ static void tlc_ctl_init(struct tlc_ctl* ctl) {
 	ctl->lsdvlt = 1; // Low short detect voltage
 
 	ctl->ctl_cmd = 0b10010110;
+	ctl->one = 1;
 }
 
 static void tlc_gs_init(struct tlc_gs* gs) {
-	(void)gs;
+	gs->zero = 0;
 }
 
 static esp_err_t tlc_pwm_init(int gpio) {
@@ -122,10 +118,9 @@ static esp_err_t tlc_spi_init(spi_host_device_t spi) {
     .spics_io_num = -1,
     .queue_size = 8,
     .flags = SPI_DEVICE_HALFDUPLEX,
-		.command_bits = 1
   };
 
-#ifdef LSBFIRST
+#ifdef LSB_FIRST
   spi_devcfg.flags |= SPI_DEVICE_TXBIT_LSBFIRST;
 #endif
 
@@ -197,46 +192,55 @@ void hexdump(uint8_t* data, size_t len) {
   printf("\n");
 }
 
-void tlc_xmit(spi_device_handle_t spi, uint8_t cmd, void* data, size_t len) {
+void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
 #ifdef REVERSE
 #ifdef XMIT_DEBUG
   printf("Initial: ");
   hexdump((uint8_t*)data, len);
 #endif
+	// Major pain, have to perform a 7 bit bitshift on the whole buffer ...
   uint8_t* ptr = tlc_reverse_buffer;
   size_t remain = len;
   while(remain-- > 0) {
-    *ptr++ = ((uint8_t*)data)[remain];
+#ifndef LSB_FIRST
+    *ptr++ = ((((uint8_t*)data)[remain] << 7)) | (remain > 0 ? (((uint8_t*)data)[remain - 1] >> 1) : 0);
+#else
+    *ptr++ = ((((uint8_t*)data)[remain] >> 7)) | (remain > 0 ? (((uint8_t*)data)[remain - 1] << 1) : 0);
+#endif
   }
 #ifdef XMIT_DEBUG
   printf("Reversed: ");
   hexdump((uint8_t*)tlc_reverse_buffer, len);
 #endif
   struct spi_transaction_t trans = {
-    .length = len * 8,
+    .length = len * 8 - 7,
     .tx_buffer = tlc_reverse_buffer,
-		.cmd = cmd
   };
 #else
   struct spi_transaction_t trans = {
-    .length = len * 8,
+    .length = len * 8 - 7,
     .tx_buffer = data,
-		.cmd = cmd
   };
 #endif
   spi_device_transmit(spi, &trans);
 }
 
+void tlc_xmitn(spi_device_handle_t spi, void* data, size_t len, size_t num) {
+	while(num-- > 0) {
+		tlc_xmit(spi, data, len);
+		data += len;
+	}
+}
+
 void tlc_update_task(void* args) {
   while(1) {
-    tlc_xmit(tlc.spi, 0, tlc.gs_data, sizeof(struct tlc_gs) * tlc.chain_len);
+    tlc_xmitn(tlc.spi, tlc.gs_data, sizeof(struct tlc_gs), tlc.chain_len);
     HI(tlc.gpio.latch);
     vTaskDelay(1 / portTICK_PERIOD_MS);
     LO(tlc.gpio.latch);
 
 //    ESP_LOGI(TAG, "Sending DC data\n");
-//		memset(tlc.ctl_data, 0, sizeof(*tlc.ctl_data));
-    tlc_xmit(tlc.spi, 1, tlc.ctl_data, sizeof(struct tlc_ctl) * tlc.chain_len);
+    tlc_xmitn(tlc.spi, tlc.ctl_data, sizeof(struct tlc_ctl), tlc.chain_len);
     HI(tlc.gpio.latch);
     vTaskDelay(1 / portTICK_PERIOD_MS);
     LO(tlc.gpio.latch);

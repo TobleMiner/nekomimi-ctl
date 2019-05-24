@@ -5,6 +5,11 @@
 
 #include <driver/spi_master.h>
 
+#define SPI_MODE 0
+//#define LSB_FIRST
+#define REVERSE
+//#define XMIT_DEBUG
+
 
 #define PWM_CHAN(name)\
   uint16_t name##_r:16;\
@@ -24,6 +29,11 @@ struct tlc_gs_chan {
 
 struct tlc_gs {
 	struct tlc_gs_chan channels[16];
+
+#ifdef LSB_FIRST
+	uint8_t pad_id:7;
+#endif
+	uint8_t zero:1;
 } __attribute__((packed));
 
 
@@ -73,7 +83,11 @@ struct tlc_ctl {
 	uint8_t pad[48];
 
 	uint8_t ctl_cmd; // Must always be set to 0b10010110
-	
+
+#ifdef LSB_FIRST
+	uint8_t pad_id:7;
+#endif
+	uint8_t one:1;
 } __attribute__((packed));
 
 
