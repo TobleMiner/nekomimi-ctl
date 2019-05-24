@@ -22,13 +22,13 @@
 #define GPIO_DATA_LATCH  33
 #define GPIO_BLANK       25
 
-#define NUM_EARS 1
+#define NUM_EARS 2
 #define NUM_TLCS NUM_EARS
 
 #define NUM_LEDS_PER_EAR 13
 #define NUM_UV_PER_EAR 8
 
-//#define DIM 0
+#define DIM 10
 #define SELF_TEST
 //#define UV
 #define COLOR_WHEEL
@@ -50,8 +50,11 @@ struct color {
   uint8_t blue;
 };
 
-//#define COL_TO_PWM(c) (((uint16_t)(c)) * 257U) // Not particularly exact but will do for now
-#define COL_TO_PWM(c) (((uint16_t)(c)) * 20U) // Not particularly exact but will do for now
+#ifdef DIM
+#define COL_TO_PWM(c) (((uint16_t)(c)) * (DIM > 26 ? 257U : 257U * DIM / 26)) // Not particularly exact but will do for now
+#else
+#define COL_TO_PWM(c) (((uint16_t)(c)) * 257U)
+#endif
 
 static uint8_t rgb_led_map[13] = {
 	8,
@@ -155,7 +158,7 @@ void app_main(void) {
 */
 
 #ifdef DIM
-  uint8_t dimval = (uint8_t)CLAMP(DIM * 127 / 100, 0, 127);
+  uint8_t dimval = (uint8_t)(CLAMP((DIM - 26), 0, 74) * 127 / 74);
   ESP_LOGI("DIMMING", "Dimming to %d %%, val = %u", DIM, dimval);
 
   for(int i = 0; i < NUM_TLCS; i++) {
@@ -167,6 +170,14 @@ void app_main(void) {
     DOC_SET(tlc.ctl_data[i].dc.doc_5, dimval)
     DOC_SET(tlc.ctl_data[i].dc.doc_6, dimval)
     DOC_SET(tlc.ctl_data[i].dc.doc_7, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_8, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_9, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_10, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_11, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_12, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_13, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_14, dimval)
+    DOC_SET(tlc.ctl_data[i].dc.doc_15, dimval)
   }
 #endif
 
