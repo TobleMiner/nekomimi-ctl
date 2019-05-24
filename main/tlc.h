@@ -5,94 +5,25 @@
 
 #include <driver/spi_master.h>
 
-/*
-#include "loop.h"
-
-union tlc_pwm {
-  struct {
-    PWM_CHAN(pwm_0);
-    PWM_CHAN(pwm_1);
-    PWM_CHAN(pwm_2);
-    PWM_CHAN(pwm_3);
-    PWM_CHAN(pwm_4);
-    PWM_CHAN(pwm_5);
-    PWM_CHAN(pwm_6);
-    PWM_CHAN(pwm_7);
-  } __attribute__((packed));
-  uint8_t data[36];
-} __attribute__((packed));
-
-#define TLC_DECLARE_PWM_(i, _) union tlc_pwm tlc##i;
-#define TLC_DECLARE_PWM_CHAIN(NAME, LENGTH) \
-  union { \
-    struct { \
-      EVAL(REPEAT(LENGTH, TLC_DECLARE_PWM_, ~)) \
-    } __attribute__((packed)); \
-    uint8_t data[sizeof(union tlc_pwm) * LENGTH]; \
-  }  __attribute__((packed)) NAME
-
-
-struct doc_channel {
-  uint8_t r:7;
-  uint8_t g:7;
-  uint8_t b:7;
-} __attribute__((packed));
-
-struct tlc_dc {
-  union {
-    struct {
-      DOC_CHAN(doc_0);
-      DOC_CHAN(doc_1);
-      DOC_CHAN(doc_2);
-      DOC_CHAN(doc_3);
-      DOC_CHAN(doc_4);
-      DOC_CHAN(doc_5);
-      DOC_CHAN(doc_6);
-      DOC_CHAN(doc_7);
-    } __attribute__((packed));
-    uint8_t data[21];
-  } __attribute__((packed)) doc;
-
-  uint8_t gbc_r:8;
-  uint8_t gbc_g:8;
-  uint8_t gbc_b:8;
-
-  uint8_t doc_range_r:1;
-  uint8_t doc_range_g:1;
-  uint8_t doc_range_b:1;
-  uint8_t repeat:1;
-  uint8_t timer_rst:1;
-  uint8_t gs_cnt_mode:2;
-
-  uint32_t user_data:17;
-} __attribute__((packed));
-
-#define TLC_DECLARE_DC_(i, _) struct tlc_dc tlc##i;
-#define TLC_DECLARE_DC_CHAIN(NAME, LENGTH) \
-  union { \
-    struct { \
-      EVAL(REPEAT(LENGTH, TLC_DECLARE_DC_, ~)) \
-    } __attribute__((packed)); \
-    uint8_t data[sizeof(struct tlc_dc) * LENGTH]; \
-  }  __attribute__((packed)) NAME
-*/
-
 
 #define PWM_CHAN(name)\
-  uint16_t name##_r:12;\
-  uint16_t name##_g:12;\
-  uint16_t name##_b:12;
+  uint16_t name##_r:16;\
+  uint16_t name##_g:16;\
+  uint16_t name##_b:16;
 
-// 8 * 36 bits => 36 bytes
-struct tlc_pwm {
-  PWM_CHAN(pwm_0);
-  PWM_CHAN(pwm_1);
-  PWM_CHAN(pwm_2);
-  PWM_CHAN(pwm_3);
-  PWM_CHAN(pwm_4);
-  PWM_CHAN(pwm_5);
-  PWM_CHAN(pwm_6);
-  PWM_CHAN(pwm_7);
+struct tlc_gs_chan {
+	union {
+		struct {
+			uint16_t r;
+			uint16_t g;
+			uint16_t b;
+		};
+		uint16_t channels[3];
+	};
+} __attribute__((packed));
+
+struct tlc_gs {
+	struct tlc_gs_chan channels[16];
 } __attribute__((packed));
 
 
@@ -101,8 +32,7 @@ struct tlc_pwm {
   uint8_t name##_g:7;\
   uint8_t name##_b:7;
 
-// 27 bytes
-struct tlc_dc {
+struct tlc_ctl {
   union {
     struct {
       DOC_CHAN(doc_0);
@@ -113,49 +43,51 @@ struct tlc_dc {
       DOC_CHAN(doc_5);
       DOC_CHAN(doc_6);
       DOC_CHAN(doc_7);
+      DOC_CHAN(doc_8);
+      DOC_CHAN(doc_9);
+      DOC_CHAN(doc_10);
+      DOC_CHAN(doc_11);
+      DOC_CHAN(doc_12);
+      DOC_CHAN(doc_13);
+      DOC_CHAN(doc_14);
+      DOC_CHAN(doc_15);
     } __attribute__((packed));
-    uint8_t data[21];
-  } __attribute__((packed)) doc;
+    uint8_t data[42];
+  } __attribute__((packed)) dc;
 
-  uint8_t gbc_r:8;
-  uint8_t gbc_g:8;
-  uint8_t gbc_b:8;
+	uint8_t mcr:3;
+	uint8_t mcg:3;
+	uint8_t mcb:3;
 
-  uint8_t doc_range_r:1;
-  uint8_t doc_range_g:1;
-  uint8_t doc_range_b:1;
-  uint8_t repeat:1;
-  uint8_t timer_rst:1;
-  uint8_t gs_cnt_mode:2;
+	uint8_t bcr:7;
+	uint8_t bcg:7;
+	uint8_t bcb:7;
 
-  uint32_t user_data:17;
+	uint8_t dsprpt:1;
+	uint8_t tmgrst:1;
+	uint8_t refresh:1;
+	uint8_t espwm:1;
+	uint8_t lsdvlt:1;
 
-/* Virtual extension during shift-out
-  uint8_t thermal_shdn:1;
-  uint8_t short_r:8;
-  uint8_t short_g:8;
-  uint8_t short_b:8;
-  uint8_t open_r:8;
-  uint8_t open_g:8;
-  uint8_t open_b:8;
-*/
+	uint8_t bitpad:5;
+	uint8_t pad[48];
+
+	uint8_t ctl_cmd; // Must always be set to 0b10010110
+	
 } __attribute__((packed));
 
+
 struct tlc_chain {
-  struct tlc_pwm* gs_data;
-  struct tlc_dc*  dc_data;
-  size_t          chain_len;
+  struct tlc_gs*   gs_data;
+  struct tlc_ctl*  ctl_data;
+  size_t           chain_len;
+  spi_device_handle_t spi;
   struct {
-    spi_device_handle_t gs;
-    spi_device_handle_t dc;
-  } spi;
-  struct {
-    int blank;
     int latch;
   } gpio;
 };
 
-esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, int gpio_blank, spi_host_device_t spi_gs, spi_host_device_t spi_dc);
+esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi);
 void tlc_update_task(void* args);
 
 extern struct tlc_chain tlc;

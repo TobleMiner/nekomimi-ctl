@@ -18,7 +18,7 @@
 #define KHZ_TO_HZ(HZ) ((HZ) * 1000UL)
 
 #define SPI_SPEED KHZ_TO_HZ(1000)
-#define PWM_SPEED KHZ_TO_HZ(100)
+#define PWM_SPEED KHZ_TO_HZ(10000)
 
 #ifndef max
   #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -32,20 +32,29 @@
 struct tlc_chain tlc = { 0 };
 static uint8_t* tlc_reverse_buffer = NULL;
 
-static void tlc_dc_init(struct tlc_dc* dc) {
-  memset(dc, 0, sizeof(*dc));
-  memset(dc->doc.data, 0xFF, sizeof(dc->doc.data));
+static void tlc_ctl_init(struct tlc_ctl* ctl) {
+  memset(ctl, 0, sizeof(*ctl));
+  memset(ctl->dc.data, 0xFF, sizeof(ctl->dc.data));
 
-  dc->gbc_r = 127;
-  dc->gbc_g = 127;
-  dc->gbc_b = 127;
+  ctl->mcr = 0b101; // 19.1 mA
+  ctl->mcg = 0b101; // 19.1 mA
+  ctl->mcb = 0b101; // 19.1 mA
 
-  dc->doc_range_r = 1;
-  dc->doc_range_g = 1;
-  dc->doc_range_b = 1;
-  dc->repeat = 1;
-  dc->timer_rst = 0;
-  dc->gs_cnt_mode = 3;
+  ctl->bcr = 127;
+  ctl->bcg = 127;
+  ctl->bcb = 127;
+
+	ctl->dsprpt = 1; // Auto-repeat enabled
+	ctl->tmgrst = 1; // Disable outputs during data clock-in
+	ctl->refresh = 1; // Refresh status data automatically
+	ctl->espwm = 1; // Enable staggered PWM
+	ctl->lsdvlt = 1; // Low short detect voltage
+
+	ctl->ctl_cmd = 0b10010110;
+}
+
+static void tlc_gs_init(struct tlc_gs* gs) {
+	(void)gs;
 }
 
 static esp_err_t tlc_pwm_init(int gpio) {
@@ -77,22 +86,22 @@ fail:
   return err;
 }
 
-static esp_err_t tlc_gpio_init(int gpio_latch, int gpio_blank) {
+static esp_err_t tlc_gpio_init(int gpio_latch) {
   gpio_config_t conf = {
     .intr_type = GPIO_PIN_INTR_DISABLE,
     .mode = GPIO_MODE_OUTPUT,
-    .pin_bit_mask = (1ull << gpio_latch) | (1ull << gpio_blank),
+    .pin_bit_mask = (1ull << gpio_latch),
     .pull_down_en = 0,
     .pull_up_en = 0
   };
   return gpio_config(&conf);
 }
 
-static esp_err_t tlc_spi_init(spi_host_device_t spi_gs, spi_host_device_t spi_dc) {
+static esp_err_t tlc_spi_init(spi_host_device_t spi) {
   esp_err_t err;
   
-  // Initialize GS SPI
-  spi_bus_config_t buscfg_gs = {
+  // Initialize SPI
+  spi_bus_config_t buscfg = {
     .miso_io_num = 12,
     .mosi_io_num = 13,
     .sclk_io_num = 14,
@@ -101,60 +110,27 @@ static esp_err_t tlc_spi_init(spi_host_device_t spi_gs, spi_host_device_t spi_dc
     .max_transfer_sz = 1024
   };
 
-  err = spi_bus_initialize(spi_gs, &buscfg_gs, 1);
+  err = spi_bus_initialize(spi, &buscfg, 1);
   ESP_LOGI(TAG, "GS SPI init finish, %d\n", err);
   if(err) {
     goto fail;
   }
 
-  spi_device_interface_config_t spi_devcfg_gs = {
+  spi_device_interface_config_t spi_devcfg = {
     .clock_speed_hz = SPI_SPEED,
     .mode = SPI_MODE,
     .spics_io_num = -1,
     .queue_size = 8,
-    .flags = SPI_DEVICE_HALFDUPLEX
+    .flags = SPI_DEVICE_HALFDUPLEX,
+		.command_bits = 1
   };
 
 #ifdef LSBFIRST
-  spi_devcfg_gs.flags |= SPI_DEVICE_TXBIT_LSBFIRST;
+  spi_devcfg.flags |= SPI_DEVICE_TXBIT_LSBFIRST;
 #endif
 
-  err = spi_bus_add_device(spi_gs, &spi_devcfg_gs, &tlc.spi.gs);
+  err = spi_bus_add_device(spi, &spi_devcfg, &tlc.spi);
   ESP_LOGI(TAG, "GS slave init finish, %d\n", err);
-  if(err) {
-    goto fail;
-  }
-
-  // Initialize DC SPI
-  spi_bus_config_t buscfg_dc = {
-    .miso_io_num = 19,
-    .mosi_io_num = 23,
-    .sclk_io_num = 18,
-    .quadwp_io_num = -1,
-    .quadhd_io_num = -1,
-    .max_transfer_sz = 1024
-  };
-
-  err = spi_bus_initialize(spi_dc, &buscfg_dc, 2);
-  ESP_LOGI(TAG, "DC SPI init finish, %d\n", err);
-  if(err) {
-    goto fail;
-  }
-
-  spi_device_interface_config_t spi_devcfg_dc = {
-    .clock_speed_hz = SPI_SPEED,
-    .mode = SPI_MODE,
-    .spics_io_num = -1,
-    .queue_size = 8,
-    .flags = SPI_DEVICE_HALFDUPLEX
-  };
-
-#ifdef LSBFIRST
-  spi_devcfg_dc.flags |= SPI_DEVICE_TXBIT_LSBFIRST;
-#endif
-
-  err = spi_bus_add_device(spi_dc, &spi_devcfg_dc, &tlc.spi.dc);
-  ESP_LOGI(TAG, "DC slave init finish, %d\n", err);
   if(err) {
     goto fail;
   }
@@ -163,24 +139,25 @@ fail:
   return err;
 }
 
-esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, int gpio_blank, spi_host_device_t spi_gs, spi_host_device_t spi_dc) {
+esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi) {
   esp_err_t err;
   int i;
 
-  if(!(tlc.gs_data = calloc(len, sizeof(struct tlc_pwm)))) {
+  if(!(tlc.gs_data = calloc(len, sizeof(struct tlc_gs)))) {
     err = ESP_ERR_NO_MEM;
     goto fail;
   }
-  if(!(tlc.dc_data = calloc(len, sizeof(struct tlc_dc)))) {
+  if(!(tlc.ctl_data = calloc(len, sizeof(struct tlc_ctl)))) {
     err = ESP_ERR_NO_MEM;
     goto fail_pwm;
   }
 
   for(i = 0; i < len; i++) {
-    tlc_dc_init(&tlc.dc_data[i]);
+    tlc_gs_init(&tlc.gs_data[i]);
+    tlc_ctl_init(&tlc.ctl_data[i]);
   }
 
-  if(!(tlc_reverse_buffer = calloc(len, max(sizeof(struct tlc_pwm), sizeof(struct tlc_dc))))) {
+  if(!(tlc_reverse_buffer = calloc(len, max(sizeof(struct tlc_gs), sizeof(struct tlc_ctl))))) {
     err = ESP_ERR_NO_MEM;
     goto fail_dc;
   }
@@ -191,14 +168,13 @@ esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, int gpio_blank, 
     goto fail_buff;
   }
 
-  tlc.gpio.blank = gpio_blank;
   tlc.gpio.latch = gpio_latch;
 
-  if((err = tlc_gpio_init(gpio_latch, gpio_blank))) {
+  if((err = tlc_gpio_init(gpio_latch))) {
     goto fail_buff;
   }
 
-  if((err = tlc_spi_init(spi_gs, spi_dc))) {
+  if((err = tlc_spi_init(spi))) {
     goto fail_buff;
   }
 
@@ -207,7 +183,7 @@ esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, int gpio_blank, 
 fail_buff:
   free(tlc_reverse_buffer);
 fail_dc:
-  free(tlc.dc_data);
+  free(tlc.ctl_data);
 fail_pwm:
   free(tlc.gs_data);
 fail:
@@ -221,7 +197,7 @@ void hexdump(uint8_t* data, size_t len) {
   printf("\n");
 }
 
-void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
+void tlc_xmit(spi_device_handle_t spi, uint8_t cmd, void* data, size_t len) {
 #ifdef REVERSE
 #ifdef XMIT_DEBUG
   printf("Initial: ");
@@ -238,32 +214,32 @@ void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
 #endif
   struct spi_transaction_t trans = {
     .length = len * 8,
-    .tx_buffer = tlc_reverse_buffer
+    .tx_buffer = tlc_reverse_buffer,
+		.cmd = cmd
   };
 #else
   struct spi_transaction_t trans = {
     .length = len * 8,
-    .tx_buffer = data
+    .tx_buffer = data,
+		.cmd = cmd
   };
 #endif
   spi_device_transmit(spi, &trans);
 }
 
 void tlc_update_task(void* args) {
-  HI(tlc.gpio.blank);
-
   while(1) {
-    LO(tlc.gpio.blank);
-
-    tlc_xmit(tlc.spi.gs, tlc.gs_data, sizeof(struct tlc_pwm) * tlc.chain_len);
-    HI(tlc.gpio.blank);
+    tlc_xmit(tlc.spi, 0, tlc.gs_data, sizeof(struct tlc_gs) * tlc.chain_len);
     HI(tlc.gpio.latch);
     vTaskDelay(1 / portTICK_PERIOD_MS);
     LO(tlc.gpio.latch);
 
 //    ESP_LOGI(TAG, "Sending DC data\n");
-    tlc_xmit(tlc.spi.dc, tlc.dc_data, sizeof(struct tlc_dc) * tlc.chain_len);
-
+//		memset(tlc.ctl_data, 0, sizeof(*tlc.ctl_data));
+    tlc_xmit(tlc.spi, 1, tlc.ctl_data, sizeof(struct tlc_ctl) * tlc.chain_len);
+    HI(tlc.gpio.latch);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    LO(tlc.gpio.latch);
 
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }
