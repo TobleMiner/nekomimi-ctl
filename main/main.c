@@ -28,11 +28,12 @@
 #define NUM_LEDS_PER_EAR 13
 #define NUM_UV_PER_EAR 8
 
-#define DIM 10
+#define DIM 50
 #define SELF_TEST
 //#define UV
 #define COLOR_WHEEL
-#define WHITE
+//#define WHITE
+//#define RED
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -57,56 +58,56 @@ struct color {
 #endif
 
 static uint8_t rgb_led_map[13] = {
-	8,
-	12,
-	9,
-	13,
-	10,
-	15,
-	11,
-	3,
-	6,
-	1,
-	5,
-	0,
-	4
+  8,
+  12,
+  9,
+  13,
+  10,
+  15,
+  11,
+  3,
+  6,
+  1,
+  5,
+  0,
+  4
 };
 
 void ear_set_led_rgb(int ear, int led, uint8_t red, uint8_t green, uint8_t blue) {
-	struct tlc_gs* chip = &tlc.gs_data[ear];
-	struct tlc_gs_chan* chan = &chip->channels[rgb_led_map[led]];
-	chan->r = COL_TO_PWM(red);
-	chan->g = COL_TO_PWM(green);
-	chan->b = COL_TO_PWM(blue);
+  struct tlc_gs* chip = &tlc.gs_data[ear];
+  struct tlc_gs_chan* chan = &chip->channels[rgb_led_map[led]];
+  chan->r = COL_TO_PWM(red);
+  chan->g = COL_TO_PWM(green);
+  chan->b = COL_TO_PWM(blue);
 //	printf("Setting LED %d:%d -> %u to (%u,%u,%u)\n", ear, led, rgb_led_map[led], red, green, blue);
 }
 
 static uint8_t uv_led_map[8] = {
-	14,
-	14,
-	14,
-	7,
-	7,
-	2,
-	2,
-	2,
+  14,
+  14,
+  14,
+  7,
+  7,
+  2,
+  2,
+  2,
 };
 
 static uint8_t uv_chan_map[8] = {
-	2,
-	0,
-	1,
-	1,
-	0,
-	1,
-	0,
-	2
+  2,
+  0,
+  1,
+  1,
+  0,
+  1,
+  0,
+  2
 };
 
 void ear_set_led_uv(int ear, int led, uint8_t level) {
-	struct tlc_gs* chip = &tlc.gs_data[ear];
-	struct tlc_gs_chan* chan = &chip->channels[uv_led_map[led]];
-	chan->channels[uv_chan_map[led]] = COL_TO_PWM(level);
+  struct tlc_gs* chip = &tlc.gs_data[ear];
+  struct tlc_gs_chan* chan = &chip->channels[uv_led_map[led]];
+  chan->channels[uv_chan_map[led]] = COL_TO_PWM(level);
 }
 
 void ear_set_led(int ear, int led, struct color col) {
@@ -183,18 +184,17 @@ void app_main(void) {
 
   xTaskCreate(tlc_update_task, "tlc_task", 4096, NULL, 12, NULL);
 
+#define MOD(i, j, k) ((i % j == k) ? 1 : 0)
+
 #ifdef SELF_TEST
   // Test pattern ~3.3 s per ear
-  for(int i = 0; i < NUM_EARS; i++) {
-    for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
-      ear_set_led_rgb(i, j, 255, 0, 0);
-      vTaskDelay(100 / portTICK_PERIOD_MS);
-      ear_set_led_rgb(i, j, 0, 255, 0);
-      vTaskDelay(100 / portTICK_PERIOD_MS);
-      ear_set_led_rgb(i, j, 0, 0, 255);
-      vTaskDelay(100 / portTICK_PERIOD_MS);
-      ear_set_led_rgb(i, j, 0, 0, 0);
+  for(int k = 0; k < 3 * 3; k++) {
+    for(int i = 0; i < NUM_EARS; i++) {
+      for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
+        ear_set_led_rgb(i, j, 255 * MOD(k, 3, 0), 255 * MOD(k, 3, 1), 255 * MOD(k, 3, 2));
+      }
     }
+    vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 #endif
 
@@ -209,6 +209,9 @@ void app_main(void) {
     for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
 #ifdef WHITE
       ear_set_led_rgb(i, j, 255, 255, 255);      
+#endif
+#ifdef RED
+      ear_set_led_rgb(i, j, 255, 0, 0);
 #endif
     }
   }

@@ -39,18 +39,18 @@ static void tlc_ctl_init(struct tlc_ctl* ctl) {
   ctl->bcg = 127;
   ctl->bcb = 127;
 
-	ctl->dsprpt = 1; // Auto-repeat enabled
-	ctl->tmgrst = 1; // Disable outputs during data clock-in
-	ctl->refresh = 1; // Refresh status data automatically
-	ctl->espwm = 1; // Enable staggered PWM
-	ctl->lsdvlt = 1; // Low short detect voltage
+  ctl->dsprpt = 1; // Auto-repeat enabled
+  ctl->tmgrst = 1; // Disable outputs during data clock-in
+  ctl->refresh = 1; // Refresh status data automatically
+  ctl->espwm = 1; // Enable staggered PWM
+  ctl->lsdvlt = 1; // Low short detect voltage
 
-	ctl->ctl_cmd = 0b10010110;
-	ctl->one = 1;
+  ctl->ctl_cmd = 0b10010110;
+  ctl->one = 1;
 }
 
 static void tlc_gs_init(struct tlc_gs* gs) {
-	gs->zero = 0;
+  gs->zero = 0;
 }
 
 static esp_err_t tlc_pwm_init(int gpio) {
@@ -138,6 +138,16 @@ esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_
   esp_err_t err;
   int i;
 
+  ESP_LOGI(TAG, "Enabling VCC0\n");
+  tlc_gpio_init(22);
+  HI(22);	
+
+  ESP_LOGI(TAG, "Enabling VCC1\n");
+  tlc_gpio_init(27);
+  HI(27);	
+
+
+
   if(!(tlc.gs_data = calloc(len, sizeof(struct tlc_gs)))) {
     err = ESP_ERR_NO_MEM;
     goto fail;
@@ -198,7 +208,7 @@ void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
   printf("Initial: ");
   hexdump((uint8_t*)data, len);
 #endif
-	// Major pain, have to perform a 7 bit bitshift on the whole buffer ...
+  // Major pain, have to perform a 7 bit bitshift on the whole buffer ...
   uint8_t* ptr = tlc_reverse_buffer;
   size_t remain = len;
   while(remain-- > 0) {
@@ -226,10 +236,10 @@ void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
 }
 
 void tlc_xmitn(spi_device_handle_t spi, void* data, size_t len, size_t num) {
-	while(num-- > 0) {
-		tlc_xmit(spi, data, len);
-		data += len;
-	}
+  while(num-- > 0) {
+    tlc_xmit(spi, data, len);
+    data += len;
+  }
 }
 
 void tlc_update_task(void* args) {

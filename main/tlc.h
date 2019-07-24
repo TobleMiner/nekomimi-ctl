@@ -17,23 +17,23 @@
   uint16_t name##_b:16;
 
 struct tlc_gs_chan {
-	union {
-		struct {
-			uint16_t r;
-			uint16_t g;
-			uint16_t b;
-		};
-		uint16_t channels[3];
-	};
+  union {
+    struct {
+      uint16_t r;
+      uint16_t g;
+      uint16_t b;
+    };
+    uint16_t channels[3];
+  };
 } __attribute__((packed));
 
 struct tlc_gs {
-	struct tlc_gs_chan channels[16];
+  struct tlc_gs_chan channels[16];
 
 #ifdef LSB_FIRST
-	uint8_t pad_id:7;
+  uint8_t pad_id:7;
 #endif
-	uint8_t zero:1;
+  uint8_t zero:1;
 } __attribute__((packed));
 
 
@@ -65,29 +65,29 @@ struct tlc_ctl {
     uint8_t data[42];
   } __attribute__((packed)) dc;
 
-	uint8_t mcr:3;
-	uint8_t mcg:3;
-	uint8_t mcb:3;
+  uint8_t mcr:3;
+  uint8_t mcg:3;
+  uint8_t mcb:3;
 
-	uint8_t bcr:7;
-	uint8_t bcg:7;
-	uint8_t bcb:7;
+  uint8_t bcr:7;
+  uint8_t bcg:7;
+  uint8_t bcb:7;
 
-	uint8_t dsprpt:1;
-	uint8_t tmgrst:1;
-	uint8_t refresh:1;
-	uint8_t espwm:1;
-	uint8_t lsdvlt:1;
+  uint8_t dsprpt:1;
+  uint8_t tmgrst:1;
+  uint8_t refresh:1;
+  uint8_t espwm:1;
+  uint8_t lsdvlt:1;
 
-	uint8_t bitpad:5;
-	uint8_t pad[48];
+  uint8_t bitpad:5;
+  uint8_t pad[48];
 
-	uint8_t ctl_cmd; // Must always be set to 0b10010110
+  uint8_t ctl_cmd; // Must always be set to 0b10010110
 
 #ifdef LSB_FIRST
-	uint8_t pad_id:7;
+  uint8_t pad_id:7;
 #endif
-	uint8_t one:1;
+  uint8_t one:1;
 } __attribute__((packed));
 
 
