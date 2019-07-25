@@ -3,6 +3,7 @@
 
 #include <esp_log.h>
 
+#include "tlc_accessors.h"
 #include "tlc_power_gov.h"
 
 #define TAG_POWER_GOV "power_gov"

@@ -5,6 +5,8 @@
 
 #include <driver/spi_master.h>
 
+#define TLC_TAG "TLC5955"
+
 #define SPI_MODE 0
 //#define LSB_FIRST
 #define REVERSE
