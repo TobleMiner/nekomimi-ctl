@@ -18,7 +18,7 @@
 #include "tlc.h"
 #include "util.h"
 #include "i2c_bus.h"
-#include "bh1750.h"
+#include "bh1750_service.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -138,15 +138,13 @@ void gpio_output(uint8_t gpio) {
   
 
 void app_main(void) {
-  struct bh1750 bh;
+  struct bh1750_service bh;
   struct i2c_bus i2c1;
 
   // I2C
   ESP_ERROR_CHECK(i2c_bus_init(&i2c1, I2C_NUM_1, 26, 25, 10000));
   i2c_detect(&i2c1);
-  ESP_ERROR_CHECK(bh1750_init(&bh, &i2c1, BH1750_ADDR_L));
-  ESP_ERROR_CHECK(bh1750_cont_hires2(&bh));
-  ESP_ERROR_CHECK(bh1750_set_mt(&bh, 254));
+  ESP_ERROR_CHECK(bh1750_service_init(&bh, &i2c1, BH1750_ADDR_L));
 
   // EARS
 
@@ -234,16 +232,11 @@ void app_main(void) {
   int steps_per_led = HSV_HUE_STEPS / (NUM_LEDS_PER_EAR * NUM_EARS);
 
   int count = 0;
-  uint16_t brightness;
   while(1) {
     if(!(count % 20)) {
-      float lux;
-      ESP_ERROR_CHECK(bh1750_measure_raw(&bh, &brightness));
-      ESP_ERROR_CHECK(bh1750_measure(&bh, &lux));
-      ESP_LOGI("BH1750", "Raw lux reading: %04x", brightness);
+      float lux = bh1750_service_get_luminocity(&bh);
       ESP_LOGI("BH1750", "%.4f Lux", lux);
-      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
-      
+//      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));      
     }
 #ifdef COLOR_WHEEL
     for(int i = 0; i < NUM_EARS; i++) {
