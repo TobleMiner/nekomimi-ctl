@@ -9,12 +9,15 @@
 #include <stdbool.h>
 #include <math.h>
 #include <driver/ledc.h> 
-#include <driver/spi_master.h> 
+#include <driver/spi_master.h>
+#include <driver/i2c.h>
 #include <string.h>
 
 #include <math.h>
 
 #include "tlc.h"
+#include "util.h"
+#include "bh1750.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -133,8 +136,63 @@ void gpio_output(uint8_t gpio) {
   } while (0);
   
 
+void i2c_init() {
+  i2c_config_t i2c_config = {
+    .mode = I2C_MODE_MASTER,
+    .sda_io_num = 26,
+    .scl_io_num = 25,
+    .master.clk_speed = 10000,
+  };
+
+  ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_1, &i2c_config));
+  ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_1, I2C_MODE_MASTER, 0, 0, 0));
+}
+
+#define TAG_I2CDETECT "i2c_detect"
+
+void i2c_detect(i2c_port_t i2c_num) {
+  ESP_LOGI(TAG_I2CDETECT, "Scanning i2c bus %d for devices", i2c_num);
+  for(uint8_t i = 0; i < 127; i++) {
+  	esp_err_t err;
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    if(!cmd) {
+      err = ESP_ERR_NO_MEM;
+      goto fail;
+    }
+    if((err = i2c_master_start(cmd))) {
+      goto fail_link;
+    }
+    if((err = i2c_master_write_byte(cmd, (i << 1), 1))) {
+      goto fail_link;
+    }
+    if((err = i2c_master_stop(cmd))) {
+      goto fail_link;
+    }
+    err = i2c_master_cmd_begin(i2c_num, cmd, 100 / portTICK_RATE_MS);
+    if(!err) {
+      ESP_LOGI(TAG_I2CDETECT, "Device %02x is present", i);
+    }
+    i2c_cmd_link_delete(cmd);
+    continue;
+
+  fail_link:
+    i2c_cmd_link_delete(cmd);
+  fail:
+    ESP_LOGI(TAG_I2CDETECT, "Failed to probe for %02x", i);
+  }
+}
+
 void app_main(void) {
   esp_err_t err;
+  struct bh1750 bh;
+
+  // I2C
+  i2c_init();
+  i2c_detect(I2C_NUM_1);
+  ESP_ERROR_CHECK(bh1750_init(&bh, I2C_NUM_1, BH1750_ADDR_L));
+  ESP_ERROR_CHECK(bh1750_cont_hires2(&bh));
+
+  // EARS
 
   printf("Size of TLC GS is %zu bytes\n", sizeof(struct tlc_gs));
   printf("Size of TLC CTL is %zu bytes\n", sizeof(struct tlc_ctl));
@@ -219,7 +277,15 @@ void app_main(void) {
   int offset = 0;
   int steps_per_led = HSV_HUE_STEPS / (NUM_LEDS_PER_EAR * NUM_EARS);
 
+  int count = 0;
+  uint16_t brightness;
   while(1) {
+    if(!(count % 20)) {
+      ESP_ERROR_CHECK(bh1750_measure_raw(&bh, &brightness));
+      ESP_LOGI("BH1750", "Raw lux reading: %04x", brightness);
+      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
+      
+    }
 #ifdef COLOR_WHEEL
     for(int i = 0; i < NUM_EARS; i++) {
       for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
@@ -234,5 +300,7 @@ void app_main(void) {
     }
 #endif
     vTaskDelay(25 / portTICK_PERIOD_MS);
+    count += 1;
+    count %= 40;
   }
 }

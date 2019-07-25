@@ -9,6 +9,7 @@
 #include <driver/ledc.h>
 
 #include "tlc.h"
+#include "util.h"
 
 #define KHZ_TO_HZ(HZ) ((HZ) * 1000UL)
 
@@ -193,13 +194,6 @@ fail_pwm:
   free(tlc.gs_data);
 fail:
   return err;
-}
-
-void hexdump(uint8_t* data, size_t len) {
-  while(len-- > 0) {
-    printf("%02X ", *data++);
-  }
-  printf("\n");
 }
 
 void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
