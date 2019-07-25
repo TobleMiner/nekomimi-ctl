@@ -11,6 +11,7 @@
 #include "tlc.h"
 #include "util.h"
 #include "tlc_power_gov.h"
+#include "config.h"
 
 #define KHZ_TO_HZ(HZ) ((HZ) * 1000UL)
 
@@ -240,7 +241,7 @@ esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_
   for(i = 0; i < len; i++) {
     tlc_gs_init(&tlc->gs_data[i]);
     tlc_ctl_init(&tlc->ctl_data[i]);
-    tlc_power_gov_init(&tlc->pwr_gov[i], 4000, 500, &tlc->gs_data[i], &tlc->ctl_data[i]);
+    tlc_power_gov_init(&tlc->pwr_gov[i], EAR_VOLTAGE_MV, EAR_TDP_MW, &tlc->gs_data[i], &tlc->ctl_data[i]);
     for(int j = 0; j < 16; j++) {
       for(int k = 0; k < 3; k++) {
         tlc_power_gov_setup_led(&tlc->pwr_gov[i], j, k, led_spec);
