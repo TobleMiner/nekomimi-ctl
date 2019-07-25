@@ -7,6 +7,8 @@
 
 #include "i2c_bus.h"
 
+#define BH1750_TAG               "bh1750"
+
 #define BH1750_ADDR_L            0b0100011
 #define BH1750_ADDR_H            0b1011100
 

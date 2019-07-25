@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <esp_log.h>
+
 #include <freertos/FreeRTOS.h>
 
 #include "bh1750.h"
@@ -37,17 +39,23 @@ fail:
 static esp_err_t bh1750_reset(struct bh1750* bh) {
   esp_err_t err = bh1750_cmd(bh, BH1750_CMD_POWER_ON);
   if(err) {
+    ESP_LOGE(BH1750_TAG, "Failed to power up bh1750");
     return err;
   }
   vTaskDelay(100 / portTICK_PERIOD_MS);
   err = bh1750_cmd(bh, BH1750_CMD_RESET);
   vTaskDelay(100 / portTICK_PERIOD_MS);
   if(err) {
+    ESP_LOGE(BH1750_TAG, "Failed to reset bh1750");
     return err;
   }
   bh->mode = BH1750_MODE_POWER_ON;
 
-  return bh1750_set_mt(bh, BH1750_MT_DEFAULT);
+  err = bh1750_set_mt(bh, BH1750_MT_DEFAULT);
+  if(err) {
+    ESP_LOGE(BH1750_TAG, "Failed to set default measurement time");
+  }
+  return err;
 }
 
 static esp_err_t bh1750_read_result(struct bh1750* bh, uint16_t* res) {
