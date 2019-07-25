@@ -104,4 +104,8 @@ struct tlc_chain {
 esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi);
 void tlc_update_task(void* args);
 
+uint8_t tlc_ctl_get_mcr_ua(struct tlc_ctl* ctl, uint8_t color);
+uint8_t tlc_ctl_get_doc(struct tlc_ctl* ctl, uint8_t channel, uint8_t color);
+uint8_t tlc_ctl_get_bc(struct tlc_ctl* ctl, uint8_t color);
+
 extern struct tlc_chain tlc;
