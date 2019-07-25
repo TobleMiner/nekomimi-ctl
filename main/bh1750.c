@@ -27,7 +27,7 @@ static esp_err_t bh1750_cmd(struct bh1750* bh, uint8_t bhcmd) {
     if((err = i2c_master_stop(cmd))) {
     goto fail_link;
   }
-  err = i2c_master_cmd_begin(bh->i2c_port, cmd, 100 / portTICK_RATE_MS);
+  err = i2c_bus_cmd_begin(bh->i2c_bus, cmd, 100 / portTICK_RATE_MS);
 fail_link:
   i2c_cmd_link_delete(cmd);
 fail:
@@ -70,7 +70,7 @@ static esp_err_t bh1750_read_result(struct bh1750* bh, uint16_t* res) {
   if((err = i2c_master_stop(cmd))) {
     goto fail_link;
   }
-  err = i2c_master_cmd_begin(bh->i2c_port, cmd, 100 / portTICK_RATE_MS);
+  err = i2c_bus_cmd_begin(bh->i2c_bus, cmd, 100 / portTICK_RATE_MS);
   if(!err) {
     *res = tmp[0] << 8 | tmp[1];
   }
@@ -82,9 +82,9 @@ fail:
 
 
 // Public API
-esp_err_t bh1750_init(struct bh1750* bh, i2c_port_t i2c_port, uint8_t i2c_addr) {
+esp_err_t bh1750_init(struct bh1750* bh, struct i2c_bus* i2c_bus, uint8_t i2c_addr) {
   memset(bh, 0, sizeof(*bh));
-  bh->i2c_port = i2c_port;
+  bh->i2c_bus = i2c_bus;
   bh->i2c_addr = i2c_addr;
   return bh1750_reset(bh);
 }

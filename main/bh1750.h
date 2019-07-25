@@ -5,6 +5,8 @@
 #include <driver/i2c.h>
 #include <esp_err.h>
 
+#include "i2c_bus.h"
+
 #define BH1750_ADDR_L            0b0100011
 #define BH1750_ADDR_H            0b1011100
 
@@ -56,13 +58,13 @@ enum bh1750_mode {
   (((mode) & BH1750_MODE_MASK_HIRES2) == BH1750_MODE_MASK_HIRES2)
 
 struct bh1750 {
-  i2c_port_t       i2c_port;
+  struct i2c_bus*  i2c_bus;
   uint8_t          i2c_addr;
   uint8_t          mtreg;
   enum bh1750_mode mode;
 };
 
-esp_err_t bh1750_init(struct bh1750* bh, i2c_port_t i2c_port, uint8_t i2c_addr);
+esp_err_t bh1750_init(struct bh1750* bh, struct i2c_bus* i2c_bus, uint8_t i2c_addr);
 
 esp_err_t bh1750_cont_hires(struct bh1750* bh);
 esp_err_t bh1750_cont_hires2(struct bh1750* bh);
