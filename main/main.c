@@ -33,7 +33,7 @@
 #define NUM_LEDS_PER_EAR 13
 #define NUM_UV_PER_EAR 8
 
-#define DIM 50
+//#define DIM 50
 #define SELF_TEST
 //#define UV
 #define COLOR_WHEEL
@@ -41,12 +41,6 @@
 //#define RED
 
 struct tlc_chain tlc;
-
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
-
-#define CLAMP(x, h, l) (max(min((x), (l)), (h)))
-
 
 esp_err_t event_handler(void *ctx, system_event_t *event) {
     return ESP_OK;
@@ -240,6 +234,7 @@ void app_main(void) {
 //      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
       for(int i = 0; i < tlc.chain_len; i++) {
         ESP_LOGI("power_governor", "Average power consumption: %u mW", tlc.pwr_gov[i].power_avg_mw);
+        ESP_LOGI("power_governor", "Current power consumption: %u mW", tlc_power_gov_current_power_mw(&tlc.pwr_gov[i]));
       }
     }
 #ifdef COLOR_WHEEL

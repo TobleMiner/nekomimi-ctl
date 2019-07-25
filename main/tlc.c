@@ -175,7 +175,17 @@ static void tlc_update_task(void* arg) {
   struct tlc_chain* tlc = arg;
   while(1) {
     for(int i = 0; i < tlc->chain_len; i++) {
-      tlc_power_gov_govern(&tlc->pwr_gov[i], 10000);
+      uint8_t dim;
+      tlc->ctl_data[i].bcr = 127;
+      tlc->ctl_data[i].bcg = 127;
+      tlc->ctl_data[i].bcb = 127;
+//      ESP_LOGI(TLC_TAG, "Pre dim power: %u mW", tlc_power_gov_current_power_mw(&tlc->pwr_gov[i]));
+      dim = (uint8_t)(141U * (uint16_t)(CLAMP(tlc_power_gov_govern(&tlc->pwr_gov[i], 10000), 10, 100) - 10) / 100U);
+//      ESP_LOGI(TLC_TAG, "Dimming to %u\n", dim);
+      tlc->ctl_data[i].bcr = dim;
+      tlc->ctl_data[i].bcg = dim;
+      tlc->ctl_data[i].bcb = dim;
+//      ESP_LOGI(TLC_TAG, "Post dim power: %u mW", tlc_power_gov_current_power_mw(&tlc->pwr_gov[i]));
     }
     tlc_xmitn(tlc, tlc->gs_data, sizeof(struct tlc_gs), tlc->chain_len);
     HI(tlc->gpio.latch);
@@ -230,7 +240,7 @@ esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_
   for(i = 0; i < len; i++) {
     tlc_gs_init(&tlc->gs_data[i]);
     tlc_ctl_init(&tlc->ctl_data[i]);
-    tlc_power_gov_init(&tlc->pwr_gov[i], 4000, 2000, &tlc->gs_data[i], &tlc->ctl_data[i]);
+    tlc_power_gov_init(&tlc->pwr_gov[i], 4000, 500, &tlc->gs_data[i], &tlc->ctl_data[i]);
     for(int j = 0; j < 16; j++) {
       for(int k = 0; k < 3; k++) {
         tlc_power_gov_setup_led(&tlc->pwr_gov[i], j, k, led_spec);

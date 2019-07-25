@@ -20,7 +20,7 @@ void tlc_power_gov_setup_led(struct tlc_power_gov* gov, uint8_t channel, uint8_t
   gov->chan_specs[channel].colors[color] = led_spec;
 }
 
-void tlc_power_gov_govern(struct tlc_power_gov* gov, uint32_t delta_t_us) {
+uint16_t tlc_power_gov_current_power_mw(struct tlc_power_gov* gov) {
   uint64_t current_total_ua = 0;
   uint32_t power_mw;
   uint64_t power_avg_mw;
@@ -48,9 +48,19 @@ void tlc_power_gov_govern(struct tlc_power_gov* gov, uint32_t delta_t_us) {
   // Remove PWM factor
   current_total_ua /= 65536ULL;
   
-  power_mw = (uint32_t)((uint64_t)current_total_ua * (uint64_t)gov->voltage_mv / 1000000ULL);
+  return (uint16_t)((uint64_t)current_total_ua * (uint64_t)gov->voltage_mv / 1000000ULL);
+}
+
+uint8_t tlc_power_gov_govern(struct tlc_power_gov* gov, uint32_t delta_t_us) {
+  uint32_t power_mw;
+  uint64_t power_avg_mw;
+
+  // Calculate average over 1s
+  power_mw = tlc_power_gov_current_power_mw(gov);
   power_avg_mw = (uint64_t)gov->power_avg_mw * (1000000ULL - (uint64_t)delta_t_us);
   power_avg_mw += (uint64_t)delta_t_us * (uint64_t)power_mw;
   power_avg_mw /= 1000000ULL;
   gov->power_avg_mw = power_avg_mw;
+
+  return gov->power_limit < gov->power_avg_mw ? (uint8_t)((uint32_t)gov->power_limit * 100UL / (uint32_t)gov->power_avg_mw) : 100;
 }
