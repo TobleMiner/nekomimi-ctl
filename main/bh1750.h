@@ -47,9 +47,13 @@ enum bh1750_mode {
 #define BH1750_MODE_MASK_CONT   0b01000
 #define BH1750_MODE_MASK_SINGLE 0b10000
 #define BH1750_MODE_MASK_HIRES  0b00100
+#define BH1750_MODE_MASK_HIRES2 0b00110
 
 #define BH1750_MODE_IS_CONT(mode) ((mode) & BH1750_MODE_MASK_CONT)
+#define BH1750_MODE_IS_SINGLE(mode) ((mode) & BH1750_MODE_MASK_SINGLE)
 #define BH1750_MODE_IS_HIRES(mode) ((mode) & BH1750_MODE_MASK_HIRES)
+#define BH1750_MODE_IS_HIRES2(mode) \
+  (((mode) & BH1750_MODE_MASK_HIRES2) == BH1750_MODE_MASK_HIRES2)
 
 struct bh1750 {
   i2c_port_t       i2c_port;
@@ -70,3 +74,4 @@ esp_err_t bh1750_set_mt(struct bh1750* bh, uint8_t val);
 uint16_t bh1750_get_mt_ms(struct bh1750* bh);
 
 esp_err_t bh1750_measure_raw(struct bh1750* bh, uint16_t* val);
+esp_err_t bh1750_measure(struct bh1750* bh, float* res);

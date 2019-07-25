@@ -191,6 +191,7 @@ void app_main(void) {
   i2c_detect(I2C_NUM_1);
   ESP_ERROR_CHECK(bh1750_init(&bh, I2C_NUM_1, BH1750_ADDR_L));
   ESP_ERROR_CHECK(bh1750_cont_hires2(&bh));
+  ESP_ERROR_CHECK(bh1750_set_mt(&bh, 254));
 
   // EARS
 
@@ -281,8 +282,11 @@ void app_main(void) {
   uint16_t brightness;
   while(1) {
     if(!(count % 20)) {
+      float lux;
       ESP_ERROR_CHECK(bh1750_measure_raw(&bh, &brightness));
+      ESP_ERROR_CHECK(bh1750_measure(&bh, &lux));
       ESP_LOGI("BH1750", "Raw lux reading: %04x", brightness);
+      ESP_LOGI("BH1750", "%.4f Lux", lux);
       ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
       
     }

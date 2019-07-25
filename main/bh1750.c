@@ -81,7 +81,6 @@ fail:
 }
 
 
-
 // Public API
 esp_err_t bh1750_init(struct bh1750* bh, i2c_port_t i2c_port, uint8_t i2c_addr) {
   memset(bh, 0, sizeof(*bh));
@@ -146,6 +145,7 @@ esp_err_t bh1750_set_mt(struct bh1750* bh, uint8_t val) {
   return err;
 }
 
+
 uint16_t bh1750_get_mt_ms(struct bh1750* bh) {
   uint16_t time_ms = BH1750_MT_LORES_MS;
   if(BH1750_MODE_IS_HIRES(bh->mode)) {
@@ -157,6 +157,7 @@ uint16_t bh1750_get_mt_ms(struct bh1750* bh) {
   return time_ms;
 }
 
+
 esp_err_t bh1750_measure_raw(struct bh1750* bh, uint16_t* res) {
   esp_err_t err;
   if(!BH1750_MODE_IS_CONT(bh->mode)) {
@@ -166,5 +167,26 @@ esp_err_t bh1750_measure_raw(struct bh1750* bh, uint16_t* res) {
     }
     vTaskDelay(bh1750_get_mt_ms(bh) / portTICK_PERIOD_MS);
   }
-  return bh1750_read_result(bh, res);
+  err = bh1750_read_result(bh, res);
+  if(!BH1750_MODE_IS_SINGLE(bh->mode)) {
+    bh->mode = BH1750_MODE_POWER_DOWN;
+  }
+  return err;
+}
+
+
+esp_err_t bh1750_measure(struct bh1750* bh, float* res) {
+  uint16_t raw;
+  esp_err_t err = bh1750_measure_raw(bh, &raw);
+  if(err) {
+    return err;
+  }
+  *res = raw;
+  *res /= 1.2;
+  *res *= (float)BH1750_MT_DEFAULT;
+  *res /= (float)bh->mtreg;
+  if(BH1750_MODE_IS_HIRES2(bh->mode)) {
+    *res /= 2;
+  }
+  return err;
 }
