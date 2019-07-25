@@ -16,6 +16,7 @@
 #include <math.h>
 
 #include "tlc.h"
+#include "tlc_power_gov.h"
 #include "util.h"
 #include "i2c_bus.h"
 #include "bh1750_service.h"
@@ -236,7 +237,10 @@ void app_main(void) {
     if(!(count % 20)) {
       float lux = bh1750_service_get_luminocity(&bh);
       ESP_LOGI("BH1750", "%.4f Lux", lux);
-//      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));      
+//      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
+      for(int i = 0; i < tlc.chain_len; i++) {
+        ESP_LOGI("power_governor", "Average power consumption: %u mW", tlc.pwr_gov[i].power_avg_mw);
+      }
     }
 #ifdef COLOR_WHEEL
     for(int i = 0; i < NUM_EARS; i++) {

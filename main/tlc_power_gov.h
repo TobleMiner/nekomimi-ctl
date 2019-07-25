@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "tlc.h"
+
 struct tlc_led_spec {
   uint16_t u_forward;
   uint16_t i_cont;
@@ -21,8 +23,12 @@ struct tlc_power_gov {
   uint16_t             voltage_mv;
   uint32_t             power_limit;
   union tlc_chan_spec  chan_specs[16];
-  struct tlc_gs*       gs_data;
-  struct tlc_ctl*      ctl_data;
+  struct tlc_gs*       gs;
+  struct tlc_ctl*      ctl;
 
   uint32_t             power_avg_mw;
 };
+
+void tlc_power_gov_init(struct tlc_power_gov* gov, uint16_t voltage_mv, uint16_t power_limit, struct tlc_gs* gs, struct tlc_ctl* ctl);
+void tlc_power_gov_setup_led(struct tlc_power_gov* gov, uint8_t channel, uint8_t color, struct tlc_led_spec led_spec);
+void tlc_power_gov_govern(struct tlc_power_gov* gov, uint32_t delta_t_us);

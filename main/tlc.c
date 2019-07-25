@@ -10,6 +10,7 @@
 
 #include "tlc.h"
 #include "util.h"
+#include "tlc_power_gov.h"
 
 #define KHZ_TO_HZ(HZ) ((HZ) * 1000UL)
 
@@ -157,15 +158,30 @@ esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_
     err = ESP_ERR_NO_MEM;
     goto fail_pwm;
   }
+  if(!(tlc.pwr_gov = calloc(len, sizeof(struct tlc_power_gov)))) {
+    err = ESP_ERR_NO_MEM;
+    goto fail_dc;
+  }
+
+  struct tlc_led_spec led_spec = {
+    .u_forward = 2500,
+    .i_cont    = 25000,
+  };
 
   for(i = 0; i < len; i++) {
     tlc_gs_init(&tlc.gs_data[i]);
     tlc_ctl_init(&tlc.ctl_data[i]);
+    tlc_power_gov_init(&tlc.pwr_gov[i], 4000, 2000, &tlc.gs_data[i], &tlc.ctl_data[i]);
+    for(int j = 0; j < 16; j++) {
+      for(int k = 0; k < 3; k++) {
+        tlc_power_gov_setup_led(&tlc.pwr_gov[i], j, k, led_spec);
+      }
+    }
   }
 
   if(!(tlc_reverse_buffer = calloc(len, max(sizeof(struct tlc_gs), sizeof(struct tlc_ctl))))) {
     err = ESP_ERR_NO_MEM;
-    goto fail_dc;
+    goto fail_pwr_gov;
   }
   
   tlc.chain_len = len;
@@ -188,6 +204,8 @@ esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_
 
 fail_buff:
   free(tlc_reverse_buffer);
+fail_pwr_gov:
+  free(tlc.pwr_gov);
 fail_dc:
   free(tlc.ctl_data);
 fail_pwm:
@@ -238,6 +256,9 @@ void tlc_xmitn(spi_device_handle_t spi, void* data, size_t len, size_t num) {
 
 void tlc_update_task(void* args) {
   while(1) {
+    for(int i = 0; i < tlc.chain_len; i++) {
+      tlc_power_gov_govern(&tlc.pwr_gov[i], 10000);
+    }
     tlc_xmitn(tlc.spi, tlc.gs_data, sizeof(struct tlc_gs), tlc.chain_len);
     HI(tlc.gpio.latch);
     vTaskDelay(1 / portTICK_PERIOD_MS);
@@ -271,7 +292,7 @@ uint8_t tlc_ctl_get_bc(struct tlc_ctl* ctl, uint8_t color) {
   return 0;
 }
 
-uint8_t tlc_ctl_get_mcr_ua(struct tlc_ctl* ctl, uint8_t color) {
+uint16_t tlc_ctl_get_mcr_ua(struct tlc_ctl* ctl, uint8_t color) {
   uint8_t mcr = 0;
 
   if(color >= 3) {
