@@ -24,9 +24,6 @@
 #define HI(gpio) (gpio_set_level((gpio), 1))
 #define LO(gpio) (gpio_set_level((gpio), 0))
 
-struct tlc_chain tlc = { 0 };
-static uint8_t* tlc_reverse_buffer = NULL;
-
 static void tlc_ctl_init(struct tlc_ctl* ctl) {
   memset(ctl, 0, sizeof(*ctl));
   memset(ctl->dc.data, 0xFF, sizeof(ctl->dc.data));
@@ -93,7 +90,7 @@ static esp_err_t tlc_gpio_init(int gpio_latch) {
   return gpio_config(&conf);
 }
 
-static esp_err_t tlc_spi_init(spi_host_device_t spi) {
+static esp_err_t tlc_spi_init(struct tlc_chain* tlc, spi_host_device_t spi) {
   esp_err_t err;
   
   // Initialize SPI
@@ -124,7 +121,7 @@ static esp_err_t tlc_spi_init(spi_host_device_t spi) {
   spi_devcfg.flags |= SPI_DEVICE_TXBIT_LSBFIRST;
 #endif
 
-  err = spi_bus_add_device(spi, &spi_devcfg, &tlc.spi);
+  err = spi_bus_add_device(spi, &spi_devcfg, &tlc->spi);
   ESP_LOGI(TLC_TAG, "GS slave init finish, %d\n", err);
   if(err) {
     goto fail;
@@ -134,9 +131,73 @@ fail:
   return err;
 }
 
-esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi) {
+static void tlc_xmit(struct tlc_chain* tlc, void* data, size_t len) {
+#ifdef REVERSE
+#ifdef XMIT_DEBUG
+  printf("Initial: ");
+  hexdump((uint8_t*)data, len);
+#endif
+  // Major pain, have to perform a 7 bit bitshift on the whole buffer ...
+  uint8_t* ptr = tlc->tlc_reverse_buffer;
+  size_t remain = len;
+  while(remain-- > 0) {
+#ifndef LSB_FIRST
+    *ptr++ = ((((uint8_t*)data)[remain] << 7)) | (remain > 0 ? (((uint8_t*)data)[remain - 1] >> 1) : 0);
+#else
+    *ptr++ = ((((uint8_t*)data)[remain] >> 7)) | (remain > 0 ? (((uint8_t*)data)[remain - 1] << 1) : 0);
+#endif
+  }
+#ifdef XMIT_DEBUG
+  printf("Reversed: ");
+  hexdump((uint8_t*)tlc->tlc_reverse_buffer, len);
+#endif
+  struct spi_transaction_t trans = {
+    .length = len * 8 - 7,
+    .tx_buffer = tlc->tlc_reverse_buffer,
+  };
+#else
+  struct spi_transaction_t trans = {
+    .length = len * 8 - 7,
+    .tx_buffer = data,
+  };
+#endif
+  spi_device_transmit(tlc->spi, &trans);
+}
+
+static void tlc_xmitn(struct tlc_chain* tlc, void* data, size_t len, size_t num) {
+  while(num-- > 0) {
+    tlc_xmit(tlc, data, len);
+    data += len;
+  }
+}
+
+static void tlc_update_task(void* arg) {
+  struct tlc_chain* tlc = arg;
+  while(1) {
+    for(int i = 0; i < tlc->chain_len; i++) {
+      tlc_power_gov_govern(&tlc->pwr_gov[i], 10000);
+    }
+    tlc_xmitn(tlc, tlc->gs_data, sizeof(struct tlc_gs), tlc->chain_len);
+    HI(tlc->gpio.latch);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    LO(tlc->gpio.latch);
+
+    tlc_xmitn(tlc, tlc->ctl_data, sizeof(struct tlc_ctl), tlc->chain_len);
+    HI(tlc->gpio.latch);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
+    LO(tlc->gpio.latch);
+
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
+}
+
+
+// Public API
+esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi) {
   esp_err_t err;
   int i;
+
+  memset(tlc, 0, sizeof(*tlc));
 
   ESP_LOGI(TLC_TAG, "Enabling VCC0\n");
   tlc_gpio_init(22);
@@ -148,15 +209,15 @@ esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_
 
 
 
-  if(!(tlc.gs_data = calloc(len, sizeof(struct tlc_gs)))) {
+  if(!(tlc->gs_data = calloc(len, sizeof(struct tlc_gs)))) {
     err = ESP_ERR_NO_MEM;
     goto fail;
   }
-  if(!(tlc.ctl_data = calloc(len, sizeof(struct tlc_ctl)))) {
+  if(!(tlc->ctl_data = calloc(len, sizeof(struct tlc_ctl)))) {
     err = ESP_ERR_NO_MEM;
     goto fail_pwm;
   }
-  if(!(tlc.pwr_gov = calloc(len, sizeof(struct tlc_power_gov)))) {
+  if(!(tlc->pwr_gov = calloc(len, sizeof(struct tlc_power_gov)))) {
     err = ESP_ERR_NO_MEM;
     goto fail_dc;
   }
@@ -167,107 +228,51 @@ esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_
   };
 
   for(i = 0; i < len; i++) {
-    tlc_gs_init(&tlc.gs_data[i]);
-    tlc_ctl_init(&tlc.ctl_data[i]);
-    tlc_power_gov_init(&tlc.pwr_gov[i], 4000, 2000, &tlc.gs_data[i], &tlc.ctl_data[i]);
+    tlc_gs_init(&tlc->gs_data[i]);
+    tlc_ctl_init(&tlc->ctl_data[i]);
+    tlc_power_gov_init(&tlc->pwr_gov[i], 4000, 2000, &tlc->gs_data[i], &tlc->ctl_data[i]);
     for(int j = 0; j < 16; j++) {
       for(int k = 0; k < 3; k++) {
-        tlc_power_gov_setup_led(&tlc.pwr_gov[i], j, k, led_spec);
+        tlc_power_gov_setup_led(&tlc->pwr_gov[i], j, k, led_spec);
       }
     }
   }
 
-  if(!(tlc_reverse_buffer = calloc(len, max(sizeof(struct tlc_gs), sizeof(struct tlc_ctl))))) {
+  if(!(tlc->tlc_reverse_buffer = calloc(len, max(sizeof(struct tlc_gs), sizeof(struct tlc_ctl))))) {
     err = ESP_ERR_NO_MEM;
     goto fail_pwr_gov;
   }
   
-  tlc.chain_len = len;
+  tlc->chain_len = len;
 
   if((err = tlc_pwm_init(gpio_pwmclk))) {
     goto fail_buff;
   }
 
-  tlc.gpio.latch = gpio_latch;
+  tlc->gpio.latch = gpio_latch;
 
   if((err = tlc_gpio_init(gpio_latch))) {
     goto fail_buff;
   }
 
-  if((err = tlc_spi_init(spi))) {
+  if((err = tlc_spi_init(tlc, spi))) {
+    goto fail_buff;
+  }
+
+  if((err = xTaskCreate(tlc_update_task, "tlc_srv", TLC_STACK, tlc, 12, NULL)) != pdPASS) {
     goto fail_buff;
   }
 
   return ESP_OK;
 
 fail_buff:
-  free(tlc_reverse_buffer);
+  free(tlc->tlc_reverse_buffer);
 fail_pwr_gov:
-  free(tlc.pwr_gov);
+  free(tlc->pwr_gov);
 fail_dc:
-  free(tlc.ctl_data);
+  free(tlc->ctl_data);
 fail_pwm:
-  free(tlc.gs_data);
+  free(tlc->gs_data);
 fail:
   return err;
-}
-
-void tlc_xmit(spi_device_handle_t spi, void* data, size_t len) {
-#ifdef REVERSE
-#ifdef XMIT_DEBUG
-  printf("Initial: ");
-  hexdump((uint8_t*)data, len);
-#endif
-  // Major pain, have to perform a 7 bit bitshift on the whole buffer ...
-  uint8_t* ptr = tlc_reverse_buffer;
-  size_t remain = len;
-  while(remain-- > 0) {
-#ifndef LSB_FIRST
-    *ptr++ = ((((uint8_t*)data)[remain] << 7)) | (remain > 0 ? (((uint8_t*)data)[remain - 1] >> 1) : 0);
-#else
-    *ptr++ = ((((uint8_t*)data)[remain] >> 7)) | (remain > 0 ? (((uint8_t*)data)[remain - 1] << 1) : 0);
-#endif
-  }
-#ifdef XMIT_DEBUG
-  printf("Reversed: ");
-  hexdump((uint8_t*)tlc_reverse_buffer, len);
-#endif
-  struct spi_transaction_t trans = {
-    .length = len * 8 - 7,
-    .tx_buffer = tlc_reverse_buffer,
-  };
-#else
-  struct spi_transaction_t trans = {
-    .length = len * 8 - 7,
-    .tx_buffer = data,
-  };
-#endif
-  spi_device_transmit(spi, &trans);
-}
-
-void tlc_xmitn(spi_device_handle_t spi, void* data, size_t len, size_t num) {
-  while(num-- > 0) {
-    tlc_xmit(spi, data, len);
-    data += len;
-  }
-}
-
-void tlc_update_task(void* args) {
-  while(1) {
-    for(int i = 0; i < tlc.chain_len; i++) {
-      tlc_power_gov_govern(&tlc.pwr_gov[i], 10000);
-    }
-    tlc_xmitn(tlc.spi, tlc.gs_data, sizeof(struct tlc_gs), tlc.chain_len);
-    HI(tlc.gpio.latch);
-    vTaskDelay(1 / portTICK_PERIOD_MS);
-    LO(tlc.gpio.latch);
-
-//    ESP_LOGI(TLC_TAG, "Sending DC data\n");
-    tlc_xmitn(tlc.spi, tlc.ctl_data, sizeof(struct tlc_ctl), tlc.chain_len);
-    HI(tlc.gpio.latch);
-    vTaskDelay(1 / portTICK_PERIOD_MS);
-    LO(tlc.gpio.latch);
-
-    vTaskDelay(10 / portTICK_PERIOD_MS);
-  }
 }

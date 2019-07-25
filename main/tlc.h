@@ -7,6 +7,8 @@
 
 #define TLC_TAG "TLC5955"
 
+#define TLC_STACK 4096
+
 #define SPI_MODE 0
 //#define LSB_FIRST
 #define REVERSE
@@ -98,17 +100,11 @@ struct tlc_chain {
   struct tlc_ctl*       ctl_data;
   struct tlc_power_gov* pwr_gov;
   size_t                chain_len;
+  uint8_t*              tlc_reverse_buffer;
   spi_device_handle_t   spi;
   struct {
     int latch;
   } gpio;
 };
 
-esp_err_t tlc_init(size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi);
-void tlc_update_task(void* args);
-
-uint16_t tlc_ctl_get_mcr_ua(struct tlc_ctl* ctl, uint8_t color);
-uint8_t tlc_ctl_get_doc(struct tlc_ctl* ctl, uint8_t channel, uint8_t color);
-uint8_t tlc_ctl_get_bc(struct tlc_ctl* ctl, uint8_t color);
-
-extern struct tlc_chain tlc;
+esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi);

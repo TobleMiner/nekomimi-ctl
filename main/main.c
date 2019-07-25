@@ -40,6 +40,8 @@
 //#define WHITE
 //#define RED
 
+struct tlc_chain tlc;
+
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
@@ -154,7 +156,7 @@ void app_main(void) {
   printf("Size of TLC CTL DC is %zu bytes\n", sizeof((((struct tlc_ctl*)(void*)0))->dc));
 
   ESP_LOGI("TLC", "Initialitzing ...");
-  ESP_ERROR_CHECK(tlc_init(NUM_TLCS, GPIO_PWM_CLK_OUT, GPIO_DATA_LATCH, HSPI_HOST));
+  ESP_ERROR_CHECK(tlc_init(&tlc, NUM_TLCS, GPIO_PWM_CLK_OUT, GPIO_DATA_LATCH, HSPI_HOST));
   ESP_LOGI("TLC", "Initialized");
 
 //  memset(tlc.gs_data, 0x00, sizeof(struct tlc_pwm) * tlc.chain_len);
@@ -194,8 +196,6 @@ void app_main(void) {
     DOC_SET(tlc.ctl_data[i].dc.doc_15, dimval)
   }
 #endif
-
-  xTaskCreate(tlc_update_task, "tlc_task", 4096, NULL, 12, NULL);
 
 #define MOD(i, j, k) ((i % j == k) ? 1 : 0)
 
