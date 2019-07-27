@@ -93,7 +93,7 @@ static esp_err_t lis3mdl_read_result(struct lis3mdl* lis, struct lis3mdl_result*
   if((err = i2c_master_write_byte(cmd, (lis->i2c_addr << 1) | 1, 1))) {
     goto fail_link;
   }
-  if((err = i2c_master_read(cmd, (uint8_t*)res, sizeof(*res), 0))) {
+  if((err = i2c_master_read(cmd, (uint8_t*)res, sizeof(*res), I2C_MASTER_LAST_NACK))) {
     goto fail_link;
   }
   if((err = i2c_master_stop(cmd))) {
@@ -125,13 +125,13 @@ esp_err_t lis3mdl_reset(struct lis3mdl* lis) {
   }
 
   // Enable continous conversion mode
-  err = lis3mdl_write_reg(lis, LIS3MDL_REG_CTRL_REG3, 0b00000011);
+  err = lis3mdl_write_reg(lis, LIS3MDL_REG_CTRL_REG3, 0b00000000);
   if(err) {
     ESP_LOGE(LIS3MDL_TAG, "Failed to setup control register 3");
     return err;
   }
 
-  // Enable continous conversion mode
+  // Enter continous conversion mode
   err = lis3mdl_write_reg(lis, LIS3MDL_REG_CTRL_REG4, 0b00001100);
   if(err) {
     ESP_LOGE(LIS3MDL_TAG, "Failed to setup control register 4");
