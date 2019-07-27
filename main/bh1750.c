@@ -72,7 +72,7 @@ static esp_err_t bh1750_read_result(struct bh1750* bh, uint16_t* res) {
   if((err = i2c_master_write_byte(cmd, (bh->i2c_addr << 1) | 1, 1))) {
     goto fail_link;
   }
-  if((err = i2c_master_read(cmd, tmp, sizeof(tmp), 0))) {
+  if((err = i2c_master_read(cmd, tmp, sizeof(tmp), I2C_MASTER_LAST_NACK))) {
     goto fail_link;
   }
   if((err = i2c_master_stop(cmd))) {
