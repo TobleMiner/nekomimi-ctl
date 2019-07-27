@@ -137,6 +137,13 @@ esp_err_t lis3mdl_reset(struct lis3mdl* lis) {
     ESP_LOGE(LIS3MDL_TAG, "Failed to setup control register 4");
     return err;
   }
+
+  // Enable block data update
+  err = lis3mdl_write_reg(lis, LIS3MDL_REG_CTRL_REG5, 0b01000000);
+  if(err) {
+    ESP_LOGE(LIS3MDL_TAG, "Failed to setup control register 5");
+    return err;
+  }
   return err;
 }
 
