@@ -24,6 +24,9 @@ struct lis3mdl_service {
   TaskHandle_t task;
   struct lis3mdl_result avg_buf[LIS3MDL_SERVICE_AVG_LEN];
   unsigned int avg_buf_write_ptr;
+
+  struct lis3mdl_result min;
+  struct lis3mdl_result max;
 };
 
 esp_err_t lis3mdl_service_init(struct lis3mdl_service* service, struct i2c_bus* bus, uint8_t i2c_addr, int drdy_gpio);

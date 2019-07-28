@@ -50,9 +50,14 @@ struct lis3mdl {
 };
 
 struct lis3mdl_result {
-  int16_t x;
-  int16_t y;
-  int16_t z;
+  union {
+    struct {
+      int16_t x;
+      int16_t y;
+      int16_t z;
+    };
+    int16_t axes[3];
+  };
   int16_t temp;
 };
 

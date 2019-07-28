@@ -19,6 +19,13 @@ static void IRAM_ATTR lis3mdl_drdy_isr(void* priv) {
   }
 }
 
+static void lis3mdl_service_remove_offset(struct lis3mdl_service* service, struct lis3mdl_result* res) {
+  uint8_t i;
+  for(i = 0; i < 3; i++) {
+    res->axes[i] -= (service->min.axes[i] + service->max.axes[i]) / 2;
+  }
+}
+
 static void lis3mdl_service_task(void* arg) {
   struct lis3mdl_service* service = arg;
   while(1) {
@@ -27,7 +34,16 @@ static void lis3mdl_service_task(void* arg) {
     ulTaskNotifyTake(pdPASS, portMAX_DELAY);
     err = lis3mdl_measure_raw(&service->lis, &res);
     if(!err) {
+      uint8_t i;
       xSemaphoreTake(service->lock, portMAX_DELAY);
+
+      // Continous calibration
+      for(i = 0; i < 3; i++) {
+        service->min.axes[i] = min(service->min.axes[i], res.axes[i]);
+        service->max.axes[i] = max(service->max.axes[i], res.axes[i]);
+      }
+
+      lis3mdl_service_remove_offset(service, &res);
       service->res = res;
       service->avg_buf[service->avg_buf_write_ptr++] = res;
       service->avg_buf_write_ptr %= ARRAY_LEN(service->avg_buf);
