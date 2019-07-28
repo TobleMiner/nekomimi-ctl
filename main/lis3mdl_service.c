@@ -75,7 +75,7 @@ esp_err_t lis3mdl_service_init(struct lis3mdl_service* service, struct i2c_bus* 
 
   err = xTaskCreate(lis3mdl_service_task, "compass_srv", LIS3MDL_SERVICE_STACK, service, 12, &service->task);
   if(err != pdPASS) {
-    ESP_LOGE(LIS3MDL_SERVICE_TAG, "Failed to initialze service task");
+    ESP_LOGE(LIS3MDL_SERVICE_TAG, "Failed to initialize service task");
     err = ESP_ERR_NO_MEM;
     goto fail_lock;
   }
