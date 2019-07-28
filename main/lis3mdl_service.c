@@ -57,10 +57,18 @@ esp_err_t lis3mdl_service_init(struct lis3mdl_service* service, struct i2c_bus* 
     ESP_LOGE(LIS3MDL_SERVICE_TAG, "Failed to set up gpio isr service");
     goto fail;
   }
+
+  err = xTaskCreate(lis3mdl_service_task, "compass_srv", LIS3MDL_SERVICE_STACK, service, 12, &service->task);
+  if(err != pdPASS) {
+    ESP_LOGE(LIS3MDL_SERVICE_TAG, "Failed to initialize service task");
+    err = ESP_ERR_NO_MEM;
+    goto fail;
+  }
+
   err = gpio_isr_handler_add(drdy_gpio, lis3mdl_drdy_isr, service);
   if(err) {
     ESP_LOGE(LIS3MDL_SERVICE_TAG, "Failed to attach isr handler");
-    goto fail;
+    goto fail_task;
   }
 
   service->lock = xSemaphoreCreateMutex();
@@ -76,13 +84,6 @@ esp_err_t lis3mdl_service_init(struct lis3mdl_service* service, struct i2c_bus* 
     goto fail_lock;
   }
 
-  err = xTaskCreate(lis3mdl_service_task, "compass_srv", LIS3MDL_SERVICE_STACK, service, 12, &service->task);
-  if(err != pdPASS) {
-    ESP_LOGE(LIS3MDL_SERVICE_TAG, "Failed to initialize service task");
-    err = ESP_ERR_NO_MEM;
-    goto fail_lock;
-  }
-
   xTaskNotifyGive(service->task);
 
   return ESP_OK;
@@ -91,6 +92,8 @@ fail_lock:
   vSemaphoreDelete(service->lock);
 fail_isr:
   gpio_isr_handler_remove(drdy_gpio);
+fail_task:
+  vTaskDelete(service->task);
 fail:
   return err;
 }
