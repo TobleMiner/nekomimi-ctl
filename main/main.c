@@ -20,7 +20,7 @@
 #include "util.h"
 #include "i2c_bus.h"
 #include "bh1750_service.h"
-#include "lis3mdl.h"
+#include "lis3mdl_service.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -136,7 +136,7 @@ void gpio_output(uint8_t gpio) {
   
 
 void app_main(void) {
-  struct lis3mdl lis;
+  struct lis3mdl_service lis;
   struct bh1750_service bh;
   struct i2c_bus i2c1;
 
@@ -144,7 +144,7 @@ void app_main(void) {
   ESP_ERROR_CHECK(i2c_bus_init(&i2c1, I2C_NUM_1, 26, 25, 10000));
   i2c_detect(&i2c1);
   ESP_ERROR_CHECK(bh1750_service_init(&bh, &i2c1, BH1750_ADDR_L));
-  ESP_ERROR_CHECK(lis3mdl_init(&lis, &i2c1, LIS3MDL_ADDR_L));
+  ESP_ERROR_CHECK(lis3mdl_service_init(&lis, &i2c1, LIS3MDL_ADDR_L, 36));
 
   // EARS
 
@@ -235,11 +235,15 @@ void app_main(void) {
       struct lis3mdl_result res;
       float lux = bh1750_service_get_luminocity(&bh);
       ESP_LOGI("BH1750", "%.4f Lux", lux);
-      ESP_ERROR_CHECK(lis3mdl_measure_raw(&lis, &res));
+      lis3mdl_service_measure_raw(&lis, &res);
       ESP_LOGI("LIS3MDL", "X: %d", res.x);
       ESP_LOGI("LIS3MDL", "Y: %d", res.y);
       ESP_LOGI("LIS3MDL", "Z: %d", res.z);
       ESP_LOGI("LIS3MDL", "Temp: %d", res.temp);
+      float x = res.x;
+      float y = res.y;
+      float angle = atanf(x / y) / M_PI * 180.0;
+      ESP_LOGI("LIS3MDL", "Angle: %.3f\n", angle);
 //      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
       for(int i = 0; i < tlc.chain_len; i++) {
         ESP_LOGI("power_governor", "Average power consumption: %u mW", tlc.pwr_gov[i].power_avg_mw);
