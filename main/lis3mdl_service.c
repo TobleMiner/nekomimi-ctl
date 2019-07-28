@@ -7,6 +7,7 @@
 #include <esp_err.h>
 #include <esp_log.h>
 
+#include "util.h"
 #include "lis3mdl_service.h"
 
 static void IRAM_ATTR lis3mdl_drdy_isr(void* priv) {
@@ -28,6 +29,8 @@ static void lis3mdl_service_task(void* arg) {
     if(!err) {
       xSemaphoreTake(service->lock, portMAX_DELAY);
       service->res = res;
+      service->avg_buf[service->avg_buf_write_ptr++] = res;
+      service->avg_buf_write_ptr %= ARRAY_LEN(service->avg_buf);
       xSemaphoreGive(service->lock);
     }
   }
@@ -93,7 +96,25 @@ fail:
 }
 
 void lis3mdl_service_measure_raw(struct lis3mdl_service* service, struct lis3mdl_result* res) {
+  int64_t x = 0;
+  int64_t y = 0;
+  int64_t z = 0;
+  int64_t temp = 0;
   xSemaphoreTake(service->lock, portMAX_DELAY);
-  *res = service->res;
+  for(int i = 0; i < ARRAY_LEN(service->avg_buf); i++) {
+    x += service->avg_buf[i].x;
+    y += service->avg_buf[i].y;
+    z += service->avg_buf[i].z;
+    temp += service->avg_buf[i].temp;
+  }
+  x /= (int64_t)ARRAY_LEN(service->avg_buf);
+  y /= (int64_t)ARRAY_LEN(service->avg_buf);
+  z /= (int64_t)ARRAY_LEN(service->avg_buf);
+  temp /= LIS3MDL_SERVICE_AVG_LEN;
+  res->x = x;
+  res->y = y;
+  res->z = z;
+  res->temp = temp;
+//  *res = service->res;
   xSemaphoreGive(service->lock);
 }
