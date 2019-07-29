@@ -1,13 +1,18 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "BME680_driver/bme680.h"
+
+#include "bme680.h"
+
 
 #define BME680_SERVICE_TAG "bme680_srv"
 
 #define BME680_SERVICE_STACK 4096
 
 struct bme680_service {
-  struct bme680_dev bme;
+  struct bme680 bme;
   SemaphoreHandle_t lock;
 
   struct bme680_field_data res;
