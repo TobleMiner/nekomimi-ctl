@@ -21,6 +21,7 @@
 #include "i2c_bus.h"
 #include "bh1750_service.h"
 #include "lis3mdl_service.h"
+#include "bme680_service.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -139,12 +140,15 @@ void app_main(void) {
   struct lis3mdl_service lis;
   struct bh1750_service bh;
   struct i2c_bus i2c1;
+  struct bme680_service bme;
 
   // I2C
   ESP_ERROR_CHECK(i2c_bus_init(&i2c1, I2C_NUM_1, 26, 25, 100000));
   i2c_detect(&i2c1);
   ESP_ERROR_CHECK(bh1750_service_init(&bh, &i2c1, BH1750_ADDR_L));
+  ESP_ERROR_CHECK(bh1750_set_mt(&bh.bh, BH1750_MT_MAX));
   ESP_ERROR_CHECK(lis3mdl_service_init(&lis, &i2c1, LIS3MDL_ADDR_L, 36));
+  ESP_ERROR_CHECK(bme680_service_init(&bme, &i2c1, BME680_I2C_ADDR_SECONDARY));
 
   // EARS
 
@@ -233,6 +237,7 @@ void app_main(void) {
   while(1) {
     if(!(count % 20)) {
       struct lis3mdl_result res;
+      struct bme680_field_data bme_res;
       float lux = bh1750_service_get_luminocity(&bh);
       ESP_LOGI("BH1750", "%.4f Lux", lux);
       lis3mdl_service_measure_raw(&lis, &res);
@@ -244,7 +249,11 @@ void app_main(void) {
       float y = res.y;
       float angle = atanf(x / y) / M_PI * 180.0;
       ESP_LOGI("LIS3MDL", "Angle: %.3f\n", angle);
+      bme680_service_measure(&bme, &bme_res);
 //      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
+      ESP_LOGI("BME680", "Temperature: %.2f °C", bme_res.temperature / 100.0);
+      ESP_LOGI("BME680", "R. Humidity: %.2f %%", bme_res.humidity / 1000.0);
+      ESP_LOGI("BME680", "Pressure: %.2f hPa", bme_res.humidity / 100.0);
       for(int i = 0; i < tlc.chain_len; i++) {
         ESP_LOGI("power_governor", "Average power consumption: %u mW", tlc.pwr_gov[i].power_avg_mw);
         ESP_LOGI("power_governor", "Current power consumption: %u mW", tlc_power_gov_current_power_mw(&tlc.pwr_gov[i]));
