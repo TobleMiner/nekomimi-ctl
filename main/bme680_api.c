@@ -7,24 +7,13 @@
 #include "i2c_bus.h"
 #include "bme680_api.h"
 
-struct i2c_bus* bme680_api_i2c_bus;
-
-void bme_api_delay_ms(uint32_t period) {
+void bme_api_delay_ms(uint32_t period, void* priv) {
   vTaskDelay(period / portTICK_RATE_MS);
 }
 
-int8_t bme_api_spi_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len) {
-  ESP_LOGE(BME680_API_TAG, "SPI not supported");
-  return 1;
-};
-
-int8_t bme_api_spi_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len) {
-  ESP_LOGE(BME680_API_TAG, "SPI not supported");
-  return 1;
-};
-
-int8_t bme_api_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len) {
+int8_t bme_api_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len, void* priv) {
 	esp_err_t err;
+  struct i2c_bus* bus = priv;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;
@@ -51,15 +40,16 @@ int8_t bme_api_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uin
   if((err = i2c_master_stop(cmd))) {
     goto fail_link;
   }
-  err = i2c_bus_cmd_begin(bme680_api_i2c_bus, cmd, 100 / portTICK_RATE_MS);
+  err = i2c_bus_cmd_begin(bus, cmd, 100 / portTICK_RATE_MS);
 fail_link:
   i2c_cmd_link_delete(cmd);
 fail:
   return err;
 }
 
-int8_t bme_api_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len) {
+int8_t bme_api_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len, void* priv) {
 	esp_err_t err;
+  struct i2c_bus* bus = priv;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;
@@ -80,7 +70,7 @@ int8_t bme_api_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, ui
   if((err = i2c_master_stop(cmd))) {
     goto fail_link;
   }
-  err = i2c_bus_cmd_begin(bme680_api_i2c_bus, cmd, 100 / portTICK_RATE_MS);
+  err = i2c_bus_cmd_begin(bus, cmd, 100 / portTICK_RATE_MS);
 fail_link:
   i2c_cmd_link_delete(cmd);
 fail:

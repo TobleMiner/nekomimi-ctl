@@ -42,8 +42,8 @@ esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bu
   service->bme.read = bme_api_i2c_read;
   service->bme.write = bme_api_i2c_write;
   service->bme.delay_ms = bme_api_delay_ms;
+  service->bme.fp_priv = bus;
 
-  bme680_api_i2c_bus = bus;
   err = bme680_init(&service->bme);
   if(err) {
     ESP_LOGE(BME680_SERVICE_TAG, "Failed to initialize BME680");
@@ -55,9 +55,9 @@ esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bu
   service->bme.tph_sett.os_temp = BME680_OS_8X;
   service->bme.tph_sett.filter = BME680_FILTER_SIZE_3;
 
-  service->bme.gas_sett.run_gas = BME680_ENABLE_GAS_MEAS;
-  service->bme.gas_sett.heatr_temp = 320;
-  service->bme.gas_sett.heatr_dur = 150;
+//  service->bme.gas_sett.run_gas = BME680_ENABLE_GAS_MEAS;
+//  service->bme.gas_sett.heatr_temp = 320;
+//  service->bme.gas_sett.heatr_dur = 150;
 
   service->bme.power_mode = BME680_FORCED_MODE;
 
