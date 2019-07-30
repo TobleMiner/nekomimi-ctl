@@ -211,7 +211,6 @@ void app_main(void) {
     vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 #endif
-
   // Enable all UV LEDs
   for(int i = 0; i < NUM_EARS; i++) {
 #ifdef UV
@@ -221,6 +220,7 @@ void app_main(void) {
     }
 #endif
     for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
+      ear_set_led_rgb(i, j, 0, 0, 0);
 #ifdef WHITE
       ear_set_led_rgb(i, j, 255, 255, 255);      
 #endif
