@@ -16,3 +16,4 @@ struct bme680 {
 };
 
 esp_err_t bme_init(struct bme680* bme, struct i2c_bus* i2c_bus, uint8_t i2c_addr);
+esp_err_t bme680_reset(struct bme680* bme);

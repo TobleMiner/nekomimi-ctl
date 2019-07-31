@@ -90,6 +90,27 @@ static int8_t bme680_api_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *re
 }
 
 // Public API
+esp_err_t bme680_reset(struct bme680* bme) {
+  esp_err_t err;
+  bme->bme.tph_sett.os_hum = BME680_OS_2X;
+  bme->bme.tph_sett.os_pres = BME680_OS_4X;
+  bme->bme.tph_sett.os_temp = BME680_OS_8X;
+  bme->bme.tph_sett.filter = BME680_FILTER_SIZE_3;
+
+//  bme->bme.gas_sett.run_gas = BME680_ENABLE_GAS_MEAS;
+//  bme->bme.gas_sett.heatr_temp = 320;
+//  bme->bme.gas_sett.heatr_dur = 150;
+
+  bme->bme.power_mode = BME680_FORCED_MODE;
+
+  err = bme680_set_sensor_settings(BME680_OST_SEL | BME680_OSP_SEL | BME680_OSH_SEL | BME680_FILTER_SEL | BME680_GAS_SENSOR_SEL, &bme->bme);
+  if(err) {
+    ESP_LOGE(BME680_TAG, "Failed to set BME680 settings");
+  }
+
+  return err;
+}
+
 esp_err_t bme_init(struct bme680* bme, struct i2c_bus* i2c_bus, uint8_t i2c_addr) {
   esp_err_t err;
   memset(bme, 0, sizeof(*bme));
@@ -110,20 +131,10 @@ esp_err_t bme_init(struct bme680* bme, struct i2c_bus* i2c_bus, uint8_t i2c_addr
     return err;
   }
 
-  bme->bme.tph_sett.os_hum = BME680_OS_2X;
-  bme->bme.tph_sett.os_pres = BME680_OS_4X;
-  bme->bme.tph_sett.os_temp = BME680_OS_8X;
-  bme->bme.tph_sett.filter = BME680_FILTER_SIZE_3;
-
-//  bme->bme.gas_sett.run_gas = BME680_ENABLE_GAS_MEAS;
-//  bme->bme.gas_sett.heatr_temp = 320;
-//  bme->bme.gas_sett.heatr_dur = 150;
-
-  bme->bme.power_mode = BME680_FORCED_MODE;
-
-  err = bme680_set_sensor_settings(BME680_OST_SEL | BME680_OSP_SEL | BME680_OSH_SEL | BME680_FILTER_SEL | BME680_GAS_SENSOR_SEL, &bme->bme);
+  err = bme680_reset(bme);
   if(err) {
-    ESP_LOGE(BME680_TAG, "Failed to set BME680 settings");
+    ESP_LOGE(BME680_TAG, "Failed to reset BME680");
+    return err;
   }
 
   return err;
