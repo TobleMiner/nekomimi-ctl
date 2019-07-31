@@ -238,7 +238,7 @@ void app_main(void) {
     if(!(count % 20)) {
       struct lis3mdl_result res;
       struct bme680_field_data bme_res;
-      float lux = bh1750_service_get_luminocity(&bh);
+      float lux = bh1750_service_get_illuminance(&bh);
       ESP_LOGI("BH1750", "%.4f Lux", lux);
       lis3mdl_service_measure_raw(&lis, &res);
       ESP_LOGI("LIS3MDL", "X: %d", res.x);

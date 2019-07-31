@@ -22,7 +22,7 @@ static void bh1750_service_task(void* arg) {
     err = bh1750_measure(&service->bh, &res);
     if(!err) {
       xSemaphoreTake(service->lock, portMAX_DELAY);
-      service->luminocity = res;
+      service->illuminance = res;
       xSemaphoreGive(service->lock);
     }
   }
@@ -45,7 +45,7 @@ esp_err_t bh1750_service_init(struct bh1750_service* service, struct i2c_bus* bu
     goto fail;
   }
 
-  err = xTaskCreate(bh1750_service_task, "luminocity_srv", BH1750_SERVICE_STACK, service, 12, NULL);
+  err = xTaskCreate(bh1750_service_task, "illuminance_srv", BH1750_SERVICE_STACK, service, 12, NULL);
   if(err != pdPASS) {
     ESP_LOGE(BH1750_SERVICE_TAG, "Failed to allocate task");
     goto fail_mutex;
@@ -59,10 +59,10 @@ fail:
   return err;  
 }
 
-float bh1750_service_get_luminocity(struct bh1750_service* service) {
+float bh1750_service_get_illuminance(struct bh1750_service* service) {
   float res;
   xSemaphoreTake(service->lock, portMAX_DELAY);
-  res = service->luminocity;
+  res = service->illuminance;
   xSemaphoreGive(service->lock);
   return res;
 }

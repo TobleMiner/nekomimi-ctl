@@ -10,10 +10,10 @@
 
 struct bh1750_service {
   struct bh1750 bh;
-  float luminocity;
+  float illuminance;
   SemaphoreHandle_t lock;
 };
 
 esp_err_t bh1750_service_init(struct bh1750_service* service, struct i2c_bus* bus, uint8_t i2c_addr);
 
-float bh1750_service_get_luminocity(struct bh1750_service* service);
+float bh1750_service_get_illuminance(struct bh1750_service* service);
