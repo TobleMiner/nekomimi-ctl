@@ -76,3 +76,11 @@ struct sensor_manager {
   struct list_head subscribers;
   SemaphoreHandle_t lock;
 };
+
+sensor_param_type_t sensors_param_get_type(sensor_param_t param);
+esp_err_t sensors_init(struct sensor_manager* mgr);
+esp_err_t sensors_add_sensor(struct sensor_manager* mgr, struct sensor_def* def, struct i2c_bus* bus, uint8_t i2c_addr);
+esp_err_t sensors_subscribe(struct sensor_manager* mgr, sensor_param_t param, sensor_subscriber_cb cb, void* priv);
+esp_err_t sensors_get_result(struct sensor_manager* mgr, sensor_param_t param, sensor_result_t* res, size_t len);
+
+esp_err_t sensors_report_result(struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len);
