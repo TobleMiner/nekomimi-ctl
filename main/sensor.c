@@ -119,7 +119,7 @@ esp_err_t sensors_report_result(struct sensor* sensor, sensor_param_t param, sen
   LIST_FOR_EACH(cursor, &mgr->subscribers) {
     struct sensor_subscriber* sub = LIST_GET_ENTRY(cursor, struct sensor_subscriber, list);
     if(sub->param & param) {
-      sub->cb(mgr, sensor, param, res, len);
+      sub->cb(mgr, sensor, param, res, len, sub->priv);
     }
   }
   xSemaphoreGive(mgr->lock);

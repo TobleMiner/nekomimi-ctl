@@ -32,7 +32,7 @@ struct sensor_manager;
 struct sensor;
 
 // sensor callback type
-typedef esp_err_t (*sensor_cb)(struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len);
+typedef esp_err_t (*sensor_cb)(struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len, void* priv);
 
 // Sensor ops
 typedef esp_err_t (*sensor_alloc)(struct sensor** sensor);
@@ -41,7 +41,7 @@ typedef void (*sensor_free)(struct sensor* sensor);
 typedef esp_err_t (*sensor_get)(struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len);
 
 // subscriber callback type
-typedef void (*sensor_subscriber_cb)(struct sensor_manager* mgr, struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len);
+typedef void (*sensor_subscriber_cb)(struct sensor_manager* mgr, struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len, void* priv);
 
 struct sensor_ops {
   sensor_alloc alloc;
