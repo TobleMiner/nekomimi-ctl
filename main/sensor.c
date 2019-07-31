@@ -90,7 +90,7 @@ esp_err_t sensors_subscribe(struct sensor_manager* mgr, sensor_param_t param, se
 esp_err_t sensors_get_result(struct sensor_manager* mgr, sensor_param_t param, sensor_result_t* res, size_t len) {
   esp_err_t err;
   struct list_head* cursor;
-  if(sensors_param_get_type(param) != len * sizeof(sensor_result_t)) {
+  if(sensors_param_get_type(param) * sizeof(sensor_result_t) != len) {
     err = ESP_ERR_INVALID_ARG;
     return err;
   }
@@ -109,7 +109,7 @@ esp_err_t sensors_report_result(struct sensor* sensor, sensor_param_t param, sen
   esp_err_t err;
   struct sensor_manager* mgr = sensor->mgr;
   struct list_head* cursor;
-  if(sensors_param_get_type(param) != len * sizeof(sensor_result_t)) {
+  if(sensors_param_get_type(param) * sizeof(sensor_result_t) != len) {
     err = ESP_ERR_INVALID_ARG;
     return err;
   }
