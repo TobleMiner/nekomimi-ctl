@@ -24,6 +24,9 @@ static void bh1750_service_task(void* arg) {
       xSemaphoreTake(service->lock, portMAX_DELAY);
       service->illuminance = res;
       xSemaphoreGive(service->lock);
+      if(service->cb) {
+        service->cb(service->cb_priv);
+      }
     }
   }
 }
@@ -65,4 +68,9 @@ float bh1750_service_get_illuminance(struct bh1750_service* service) {
   res = service->illuminance;
   xSemaphoreGive(service->lock);
   return res;
+}
+
+void bh1750_service_set_cb(struct bh1750_service* service, bh1750_service_cb cb, void* priv) {
+  service->cb = cb;
+  service->cb_priv = priv;
 }
