@@ -34,6 +34,7 @@ static void bme680_service_task(void* arg) {
     }
     service->bme.bme.power_mode = BME680_FORCED_MODE;
     bme680_set_sensor_mode(&service->bme.bme);
+    vTaskDelay(BME680_SERVICE_MEASURE_INTERVAL / portTICK_PERIOD_MS);
   }
 }
 

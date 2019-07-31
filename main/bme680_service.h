@@ -11,6 +11,8 @@
 
 #define BME680_SERVICE_STACK 4096
 
+#define BME680_SERVICE_MEASURE_INTERVAL 500
+
 struct bme680_service {
   struct bme680 bme;
   SemaphoreHandle_t lock;
