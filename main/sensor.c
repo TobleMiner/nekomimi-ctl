@@ -77,6 +77,7 @@ esp_err_t sensors_subscribe(struct sensor_manager* mgr, sensor_param_t param, se
   }
 
   INIT_LIST_HEAD(sub->list);
+  sub->param = param;
   sub->cb = cb;
   sub->priv = priv;
 
