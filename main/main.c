@@ -19,9 +19,9 @@
 #include "tlc_power_gov.h"
 #include "util.h"
 #include "i2c_bus.h"
-#include "bh1750_service.h"
 #include "lis3mdl_service.h"
 #include "bme680_service.h"
+#include "bh1750_sensor.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -137,18 +137,22 @@ void gpio_output(uint8_t gpio) {
   
 
 void app_main(void) {
+  struct sensor_manager sensors;
   struct lis3mdl_service lis;
-  struct bh1750_service bh;
+//  struct bh1750_service bh;
   struct i2c_bus i2c1;
   struct bme680_service bme;
 
   // I2C
   ESP_ERROR_CHECK(i2c_bus_init(&i2c1, I2C_NUM_1, 26, 25, 100000));
   i2c_detect(&i2c1);
-  ESP_ERROR_CHECK(bh1750_service_init(&bh, &i2c1, BH1750_ADDR_L));
-  ESP_ERROR_CHECK(bh1750_set_mt(&bh.bh, BH1750_MT_MAX));
+//  ESP_ERROR_CHECK(bh1750_service_init(&bh, &i2c1, BH1750_ADDR_L));
   ESP_ERROR_CHECK(lis3mdl_service_init(&lis, &i2c1, LIS3MDL_ADDR_L, 36));
   ESP_ERROR_CHECK(bme680_service_init(&bme, &i2c1, BME680_I2C_ADDR_SECONDARY));
+
+  // Sensors
+  ESP_ERROR_CHECK(sensors_init(&sensors));
+  ESP_ERROR_CHECK(sensors_add_sensor(&sensors, &bh1750_sensor_def, &i2c1, BH1750_ADDR_L));
 
   // EARS
 
@@ -238,7 +242,9 @@ void app_main(void) {
     if(!(count % 20)) {
       struct lis3mdl_result res;
       struct bme680_field_data bme_res;
-      float lux = bh1750_service_get_illuminance(&bh);
+  //    float lux = bh1750_service_get_illuminance(&bh);
+      sensor_result_t lux;
+      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_ILLUMINANCE, &lux, sizeof(lux)));
       ESP_LOGI("BH1750", "%.4f Lux", lux);
       lis3mdl_service_measure_raw(&lis, &res);
       ESP_LOGI("LIS3MDL", "X: %d", res.x);
