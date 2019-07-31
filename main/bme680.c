@@ -81,20 +81,12 @@ static void bme680_api_delay_ms(uint32_t period, void* priv) {
 
 static int8_t bme680_api_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len, void* priv) {
   struct bme680* bme = priv;
-  esp_err_t err = bme680_read_reg(bme, reg_addr, reg_data, len);
-  if(err) {
-    ESP_LOGE(BME680_TAG, "Read failed");
-  }
-  return err;
+  return bme680_read_reg(bme, reg_addr, reg_data, len);
 }
 
 static int8_t bme680_api_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data, uint16_t len, void* priv) {
   struct bme680* bme = priv;
-  esp_err_t err = bme680_write_reg(bme, reg_addr, reg_data, len);
-  if(err) {
-    ESP_LOGE(BME680_TAG, "Write failed");
-  }
-  return err;
+  return bme680_write_reg(bme, reg_addr, reg_data, len);
 }
 
 // Public API

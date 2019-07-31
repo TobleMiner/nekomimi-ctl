@@ -31,8 +31,6 @@ static void bme680_service_task(void* arg) {
       xSemaphoreTake(service->lock, portMAX_DELAY);
       service->res = meas;
       xSemaphoreGive(service->lock);
-    } else {
-      ESP_LOGE(BME680_SERVICE_TAG, "Failed to read sensor data");
     }
     service->bme.bme.power_mode = BME680_FORCED_MODE;
     bme680_set_sensor_mode(&service->bme.bme);
