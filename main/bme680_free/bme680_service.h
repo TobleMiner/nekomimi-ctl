@@ -2,9 +2,10 @@
 
 #include <stdint.h>
 
-#include "BME680_driver/bme680.h"
+#include "../BME680_driver/bme680.h"
 
-#include "bme680.h"
+#include "../i2c_bus.h"
+#include "../bme680.h"
 
 
 #define BME680_SERVICE_TAG "bme680_srv"

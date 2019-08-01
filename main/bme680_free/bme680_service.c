@@ -6,8 +6,6 @@
 #include <esp_err.h>
 #include <esp_log.h>
 
-#include "i2c_bus.h"
-#include "bme680.h"
 #include "bme680_service.h"
 
 static void bme680_service_task(void* arg) {

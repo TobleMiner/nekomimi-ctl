@@ -1,0 +1,13 @@
+menu "Nekomimi"
+
+choice NEKOMIMI_BME680_ALGO
+  prompt "BME680 algorithm"
+
+  config NEKOMIMI_BME680_ALGO_FREE
+    bool "Worse open source algorithm"
+
+  config NEKOMIMI_BME680_ALGO_PROPRIETARY
+    bool "Proprietary Bosch BSEC library"
+endchoice
+
+endmenu
