@@ -20,7 +20,7 @@
 #include "util.h"
 #include "i2c_bus.h"
 #include "lis3mdl_service.h"
-#include "bme680_service.h"
+#include "bme680_sensor.h"
 #include "bh1750_sensor.h"
 
 #include "fast_hsv2rgb.h"
@@ -136,6 +136,10 @@ void gpio_output(uint8_t gpio) {
   } while (0);
   
 
+static void illuminance_cb(struct sensor_manager* mgr, struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len, void* priv) {
+//  ESP_LOGI("ILLUMINANCE_CB", "Got illuminance CB: %f", *res);
+}
+
 void app_main(void) {
   struct sensor_manager sensors;
   struct lis3mdl_service lis;
@@ -148,11 +152,13 @@ void app_main(void) {
   i2c_detect(&i2c1);
 //  ESP_ERROR_CHECK(bh1750_service_init(&bh, &i2c1, BH1750_ADDR_L));
   ESP_ERROR_CHECK(lis3mdl_service_init(&lis, &i2c1, LIS3MDL_ADDR_L, 36));
-  ESP_ERROR_CHECK(bme680_service_init(&bme, &i2c1, BME680_I2C_ADDR_SECONDARY));
+//  ESP_ERROR_CHECK(bme680_service_init(&bme, &i2c1, BME680_I2C_ADDR_SECONDARY));
 
   // Sensors
   ESP_ERROR_CHECK(sensors_init(&sensors));
+  ESP_ERROR_CHECK(sensors_subscribe(&sensors, SENSOR_PARAM_ILLUMINANCE, illuminance_cb, NULL));
   ESP_ERROR_CHECK(sensors_add_sensor(&sensors, &bh1750_sensor_def, &i2c1, BH1750_ADDR_L));
+  ESP_ERROR_CHECK(sensors_add_sensor(&sensors, &bme680_sensor_def, &i2c1, BME680_I2C_ADDR_SECONDARY));
 
   // EARS
 
@@ -241,9 +247,12 @@ void app_main(void) {
   while(1) {
     if(!(count % 20)) {
       struct lis3mdl_result res;
-      struct bme680_field_data bme_res;
+  //    struct bme680_field_data bme_res;
   //    float lux = bh1750_service_get_illuminance(&bh);
       sensor_result_t lux;
+      sensor_result_t temperature;
+      sensor_result_t humidity;
+      sensor_result_t pressure;
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_ILLUMINANCE, &lux, sizeof(lux)));
       ESP_LOGI("BH1750", "%.4f Lux", lux);
       lis3mdl_service_measure_raw(&lis, &res);
@@ -255,11 +264,14 @@ void app_main(void) {
       float y = res.y;
       float angle = atanf(x / y) / M_PI * 180.0;
       ESP_LOGI("LIS3MDL", "Angle: %.3f\n", angle);
-      bme680_service_measure(&bme, &bme_res);
+//      bme680_service_measure(&bme, &bme_res);
 //      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
-      ESP_LOGI("BME680", "Temperature: %.2f °C", bme_res.temperature / 100.0);
-      ESP_LOGI("BME680", "R. Humidity: %.2f %%", bme_res.humidity / 1000.0);
-      ESP_LOGI("BME680", "Pressure: %.2f hPa", bme_res.humidity / 100.0);
+      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_TEMPERATURE, &temperature, sizeof(temperature)));
+      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_HUMIDITY, &humidity, sizeof(humidity)));
+      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_PRESSURE, &pressure, sizeof(pressure)));
+      ESP_LOGI("BME680", "Temperature: %.2f °C", temperature);
+      ESP_LOGI("BME680", "R. Humidity: %.2f %%", humidity);
+      ESP_LOGI("BME680", "Pressure: %.2f hPa", pressure / 100.0);
       for(int i = 0; i < tlc.chain_len; i++) {
         ESP_LOGI("power_governor", "Average power consumption: %u mW", tlc.pwr_gov[i].power_avg_mw);
         ESP_LOGI("power_governor", "Current power consumption: %u mW", tlc_power_gov_current_power_mw(&tlc.pwr_gov[i]));
