@@ -143,16 +143,12 @@ static void illuminance_cb(struct sensor_manager* mgr, struct sensor* sensor, se
 void app_main(void) {
   struct sensor_manager sensors;
   struct lis3mdl_service lis;
-//  struct bh1750_service bh;
   struct i2c_bus i2c1;
-  struct bme680_service bme;
 
   // I2C
   ESP_ERROR_CHECK(i2c_bus_init(&i2c1, I2C_NUM_1, 26, 25, 100000));
   i2c_detect(&i2c1);
-//  ESP_ERROR_CHECK(bh1750_service_init(&bh, &i2c1, BH1750_ADDR_L));
   ESP_ERROR_CHECK(lis3mdl_service_init(&lis, &i2c1, LIS3MDL_ADDR_L, 36));
-//  ESP_ERROR_CHECK(bme680_service_init(&bme, &i2c1, BME680_I2C_ADDR_SECONDARY));
 
   // Sensors
   ESP_ERROR_CHECK(sensors_init(&sensors));
@@ -170,19 +166,6 @@ void app_main(void) {
   ESP_ERROR_CHECK(tlc_init(&tlc, NUM_TLCS, GPIO_PWM_CLK_OUT, GPIO_DATA_LATCH, HSPI_HOST));
   ESP_LOGI("TLC", "Initialized");
 
-//  memset(tlc.gs_data, 0x00, sizeof(struct tlc_pwm) * tlc.chain_len);
-
-/*
-  tlc.gs_data[0].pwm_7_r = 0xFFF;
-  tlc.gs_data[0].pwm_7_g = 0xFFF;
-  tlc.gs_data[0].pwm_7_b = 0xFFF;
-
-  tlc.gs_data[0].pwm_4_r = 0x0;
-  tlc.gs_data[0].pwm_2_g = 0x0;
-  tlc.gs_data[1].pwm_4_b = 0x0;
-  tlc.gs_data[1].pwm_1_g = 0x0;
-  tlc.gs_data[1].pwm_7_g = 0xFFF;
-*/
 
 #ifdef DIM
   uint8_t dimval = (uint8_t)(CLAMP((DIM - 26), 0, 74) * 127 / 74);
@@ -247,8 +230,6 @@ void app_main(void) {
   while(1) {
     if(!(count % 20)) {
       struct lis3mdl_result res;
-  //    struct bme680_field_data bme_res;
-  //    float lux = bh1750_service_get_illuminance(&bh);
       sensor_result_t lux;
       sensor_result_t temperature;
       sensor_result_t humidity;
@@ -264,8 +245,6 @@ void app_main(void) {
       float y = res.y;
       float angle = atanf(x / y) / M_PI * 180.0;
       ESP_LOGI("LIS3MDL", "Angle: %.3f\n", angle);
-//      bme680_service_measure(&bme, &bme_res);
-//      ESP_LOGI("BH1750", "Measurement took %u ms", bh1750_get_mt_ms(&bh));
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_TEMPERATURE, &temperature, sizeof(temperature)));
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_HUMIDITY, &humidity, sizeof(humidity)));
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_PRESSURE, &pressure, sizeof(pressure)));
