@@ -19,10 +19,17 @@
 
 typedef void (*bme680_service_cb)(void* priv);
 
+enum BME680_SERVICE_STATE {
+  BME680_SERVICE_STATE_IDLE = 0,
+  BME680_SERVICE_STATE_MEASURE,
+};
+
 struct bme680_service {
   struct bme680 bme;
   SemaphoreHandle_t lock;
   esp_timer_handle_t timer;
+  enum BME680_SERVICE_STATE state;
+  int64_t mesaurement_start;
 
   struct bme680_field_data res;
 
