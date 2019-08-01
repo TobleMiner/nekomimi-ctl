@@ -13,13 +13,20 @@
 
 #define BME680_SERVICE_MEASURE_INTERVAL 500
 
+typedef void (*bme680_service_cb)(void* priv);
+
 struct bme680_service {
   struct bme680 bme;
   SemaphoreHandle_t lock;
 
   struct bme680_field_data res;
+
+  bme680_service_cb cb;
+  void* cb_priv;
 };
 
 esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bus, uint8_t i2c_addr);
 
 void bme680_service_measure(struct bme680_service* service, struct bme680_field_data* meas);
+
+void bme680_service_set_cb(struct bme680_service* service, bme680_service_cb cb, void* priv);

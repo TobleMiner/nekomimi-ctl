@@ -31,6 +31,9 @@ static void bme680_service_task(void* arg) {
       xSemaphoreTake(service->lock, portMAX_DELAY);
       service->res = meas;
       xSemaphoreGive(service->lock);
+      if(service->cb) {
+        service->cb(service->cb_priv);
+      }
     }
     service->bme.bme.power_mode = BME680_FORCED_MODE;
     bme680_set_sensor_mode(&service->bme.bme);
@@ -74,4 +77,10 @@ void bme680_service_measure(struct bme680_service* service, struct bme680_field_
   xSemaphoreTake(service->lock, portMAX_DELAY);
   *meas = service->res;
   xSemaphoreGive(service->lock);
+}
+
+void bme680_service_set_cb(struct bme680_service* service, bme680_service_cb cb, void* priv) {
+  service->cb_priv = priv;
+  __sync_synchronize();
+  service->cb = cb;
 }
