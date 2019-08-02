@@ -9,19 +9,55 @@
 #include "../util.h"
 #include "bme680_service.h"
 
-static esp_err_t bme680_service_read_results(int64_t timestamp, struct bme680* bme, bsec_input_t* bsec_inputs, uint8_t* num_inputs) {
+static esp_err_t bme680_service_read_results(int64_t timestamp, struct bme680* bme, bsec_input_t* bsec_inputs, uint8_t* num_inputs, int32_t bsec_flags) {
+  esp_err_t err;
   struct bme680_field_data data;
+  unsigned int i = 0;
 
   *num_inputs = 0;
 
-  bme680_get_sensor_data(&data, bme->bme);
+  err = bme680_get_sensor_data(&data, bme->bme);
+  if(err) {
+    return err;
+  }
+
   if(!(data.status & BME680_NEW_DATA_MSK)) {
     return ESP_OK;
   }
 
-  
+  if(bsec_flags & BSEC_PROCESS_TEMPERATURE) {
+    inputs[i].sensor_id = BSEC_INPUT_TEMPERATURE;
+    inputs[i].signal = data.temperature;
+    inputs[i].time_stamp = timestamp;
+    i++;
+  }
+
+  if(bsec_flags & BSEC_PROCESS_HUMIDITY) {
+    inputs[i].sensor_id = BSEC_INPUT_HUMIDITY;
+    inputs[i].signal = data.humidity;
+    inputs[i].time_stamp = timestamp;
+    i++;
+  }
+
+  if(bsec_flags & BSEC_PROCESS_PRESSURE) {
+    inputs[i].sensor_id = BSEC_INPUT_PRESSURE;
+    inputs[i].signal = data.pressure;
+    inputs[i].time_stamp = timestamp;
+    i++;
+  }
+
+  if(bsec_flags & BSEC_PROCESS_GAS) {
+    inputs[i].sensor_id = BSEC_INPUT_GASRESISTOR;
+    inputs[i].signal = data.gas_resistance;
+    inputs[i].time_stamp = timestamp;
+    i++;
+  }
+
+  *num_inputs = i;
+  return ESP_OK;
 }
 
+static void bme680_service_process_data(struct )
 
 static void bme680_service_task(void* arg) {
   struct bme680_service* service = arg;
