@@ -9,14 +9,14 @@
 #include "../util.h"
 #include "bme680_service.h"
 
-static esp_err_t bme680_service_read_results(int64_t timestamp, struct bme680* bme, bsec_input_t* bsec_inputs, uint8_t* num_inputs, int32_t bsec_flags) {
+static esp_err_t bme680_service_read_data(int64_t timestamp, struct bme680* bme, bsec_input_t* inputs, uint8_t* num_inputs, int32_t bsec_flags) {
   esp_err_t err;
   struct bme680_field_data data;
   unsigned int i = 0;
 
   *num_inputs = 0;
 
-  err = bme680_get_sensor_data(&data, bme->bme);
+  err = bme680_get_sensor_data(&data, &bme->bme);
   if(err) {
     return err;
   }
@@ -57,29 +57,67 @@ static esp_err_t bme680_service_read_results(int64_t timestamp, struct bme680* b
   return ESP_OK;
 }
 
-static void bme680_service_process_data(struct )
+esp_err_t bme680_service_process_data(bsec_input_t *inputs, uint8_t num_inputs, struct bme680_service_data* data) {
+  esp_err_t err;
+  bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
+  uint8_t num_outputs = 0;  
+
+  if(num_inputs == 0) {
+    return ESP_OK;
+  }
+
+  err = bsec_do_steps(inputs, num_inputs, outputs, &num_outputs);
+  if(err) {
+    return err;
+  }
+
+  while(num_outputs--) {
+    switch(outputs[num_outputs].sensor_id) {
+      case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
+        data->temperature = outputs[num_outputs].signal;
+        data->temperature_ready = true;
+        break;
+      case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY:
+        data->humidity = outputs[num_outputs].signal;
+        data->humidity_ready = true;
+        break;
+      case BSEC_OUTPUT_RAW_PRESSURE:
+        data->pressure = outputs[num_outputs].signal;
+        data->pressure_ready = true;
+        break;
+      case BSEC_OUTPUT_IAQ:
+        data->iaq = outputs[num_outputs].signal;
+        data->iaq_ready = true;
+        break;
+    }
+  }
+
+  return err;
+}
 
 static void bme680_service_task(void* arg) {
   struct bme680_service* service = arg;
   bsec_bme_settings_t bme_settings;
   bsec_input_t bsec_inputs[BSEC_MAX_PHYSICAL_SENSOR];
-  bsec_output_t bsec_outputs[BSEC_NUMBER_OUTPUTS];
 
   while(1) {
+    uint8_t num_inputs = 0;
     int64_t measure_begin = esp_timer_get_time() * 1000LL;
-    bsec_sensor_control(now, &bme_settings);
+    struct bme680_service_data data;
+    bool updated = false;
+    bsec_sensor_control(measure_begin, &bme_settings);
 
     if(bme_settings.trigger_measurement) {
       uint16_t meas_dur_ms;
       service->bme.bme.power_mode = BME680_FORCED_MODE;
 
-      service->bme.bme.tph_sett.os_temp = bme_settings.temperatue_oversampling;
+      service->bme.bme.tph_sett.os_temp = bme_settings.temperature_oversampling;
       service->bme.bme.tph_sett.os_hum = bme_settings.humidity_oversampling;
       service->bme.bme.tph_sett.os_pres = bme_settings.pressure_oversampling;
 
-      service->bme.bme.tph_sett.run_gas = bme_settings.run_gas;
-      service->bme.bme.tph_sett.heatr_temp = bme_settings.heater_temperature;
-      service->bme.bme.tph_sett.heatr_dur = bme_settings.heating_duration;
+      service->bme.bme.gas_sett.run_gas = bme_settings.run_gas;
+      service->bme.bme.gas_sett.heatr_temp = bme_settings.heater_temperature;
+      service->bme.bme.gas_sett.heatr_dur = bme_settings.heating_duration;
 
       bme680_set_sensor_settings(BME680_OST_SEL | BME680_OSP_SEL | BME680_OSH_SEL | BME680_GAS_SENSOR_SEL, &service->bme.bme);
       bme680_set_sensor_mode(&service->bme.bme);
@@ -87,25 +125,49 @@ static void bme680_service_task(void* arg) {
 
       bme680_get_profile_dur(&meas_dur_ms, &service->bme.bme);
       esp_timer_start_once(service->timer, (uint32_t)meas_dur_ms * 1000UL);
-      ulTaskNotifyTake();
+      ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
       bme680_get_sensor_mode(&service->bme.bme);
       while(service->bme.bme.power_mode == BME680_FORCED_MODE) {
         esp_timer_start_once(service->timer, 5000UL);
-        ulTaskNotifyTake();
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         bme680_get_sensor_mode(&service->bme.bme);
       }
     }    
 
     // Measurement finished
     if(bme_settings.process_data) {
-      bme680_bsec_read_data(measure_begin, )
+      bme680_service_read_data(measure_begin, &service->bme, bsec_inputs, &num_inputs, bme_settings.process_data);
     }
+
+    bme680_service_process_data(bsec_inputs, num_inputs, &data);
 
 
     xSemaphoreTake(service->lock, portMAX_DELAY);
-    service->res = meas;
+    if(service->res.temperature_ready) {
+      service->res.temperature = data.temperature;
+      service->res.temperature_ready = true;
+      updated = true;
+    }
+    if(service->res.humidity_ready) {
+      service->res.humidity = data.humidity;
+      service->res.humidity_ready = true;
+      updated = true;
+    }
+    if(service->res.pressure_ready) {
+      service->res.pressure = data.pressure;
+      service->res.pressure_ready = true;
+      updated = true;
+    }
+    if(service->res.iaq_ready) {
+      service->res.iaq = data.iaq;
+      service->res.iaq_ready = true;
+      updated = true;
+    }
     xSemaphoreGive(service->lock);  
+    if(updated && service->cb) {
+      service->cb(service->cb_priv);
+    }
   }
 }
 
@@ -115,7 +177,7 @@ static void bme680_service_timer_callback(void* arg) {
 }
 
 static esp_err_t bme680_service_bsec_update_subscription(struct bme680_service_rate* rate, bsec_sensor_configuration_t* required_config, uint8_t* num_required_config) {
-  bsec_sensor_configuration_t requested_virtual_sensors[NUM_USED_OUTPUTS];
+  bsec_sensor_configuration_t requested_virtual_sensors[BSEC_MAX_PHYSICAL_SENSOR];
 
   requested_virtual_sensors[0].sensor_id = BSEC_OUTPUT_IAQ;
   requested_virtual_sensors[0].sample_rate = rate->iaq;
@@ -140,16 +202,16 @@ static esp_err_t bme680_service_bsec_update_subscription(struct bme680_service_r
 esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bus, uint8_t i2c_addr) {
   esp_err_t err;
   struct bme680_service_rate rate = {
-    temperature = BSEC_SAMPLE_RATE_LP,
-    humidity = BSEC_SAMPLE_RATE_LP,
-    pressure = BSEC_SAMPLE_RATE_LP,
-    iaq = BSEC_SAMPLE_RATE_LP,
+    .temperature = BSEC_SAMPLE_RATE_LP,
+    .humidity = BSEC_SAMPLE_RATE_LP,
+    .pressure = BSEC_SAMPLE_RATE_LP,
+    .iaq = BSEC_SAMPLE_RATE_LP,
   };
   esp_timer_create_args_t timer_args = {
-    callback = bme680_service_timer_callback,
-    arg = service,
-    dispatch_method = ESP_TIMER_TASK,
-    name = "BME680_BSEC_TIMER",
+    .callback = bme680_service_timer_callback,
+    .arg = service,
+    .dispatch_method = ESP_TIMER_TASK,
+    .name = "BME680_BSEC_TIMER",
   };
   memset(service, 0, sizeof(*service));
 
@@ -168,23 +230,23 @@ esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bu
   err = bsec_init();
   if(err) {
     ESP_LOGE(BME680_SERVICE_TAG, "Failed to initialize BME680 BSEC lib");
-    goto fail;
+    goto fail_timer;
   }
 
   err = bme680_service_bsec_update_subscription(&rate, service->required_sensor_settings, &service->num_required_sensor_settings);
   if(err) {
     ESP_LOGE(BME680_SERVICE_TAG, "Failed to set intial BME680 BSEC subscription");
-    return goto fail;
+    goto fail_timer;
   }
 
   service->lock = xSemaphoreCreateMutex();
   if(!service->lock) {
     ESP_LOGE(BME680_SERVICE_TAG, "Failed to allocate lock mutex");
     err = ESP_ERR_NO_MEM;
-    goto fail;
+    goto fail_timer;
   }
 
-  err = xTaskCreate(bme680_service_task, "bme680_srv", BME680_SERVICE_STACK, service, 12, NULL);
+  err = xTaskCreate(bme680_service_task, "bme680_srv", BME680_SERVICE_STACK, service, 12, &service->task);
   if(err != pdPASS) {
     ESP_LOGE(BME680_SERVICE_TAG, "Failed to initialize service task");
     err = ESP_ERR_NO_MEM;
@@ -195,11 +257,13 @@ esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bu
 
 fail_lock:
   vSemaphoreDelete(service->lock);
+fail_timer:
+  esp_timer_delete(service->timer);
 fail:
   return err;
 }
 
-void bme680_service_measure(struct bme680_service* service, struct bme680_field_data* meas) {
+void bme680_service_measure(struct bme680_service* service, struct bme680_service_data* meas) {
   xSemaphoreTake(service->lock, portMAX_DELAY);
   *meas = service->res;
   xSemaphoreGive(service->lock);

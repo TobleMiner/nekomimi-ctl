@@ -24,14 +24,26 @@ enum BME680_SERVICE_STATE {
   BME680_SERVICE_STATE_MEASURE,
 };
 
+struct bme680_service_data {
+  float temperature;
+  bool  temperature_ready;
+  float humidity;
+  bool  humidity_ready;
+  float pressure;
+  bool  pressure_ready;
+  float iaq;
+  bool  iaq_ready;
+};
+
 struct bme680_service {
   struct bme680 bme;
   SemaphoreHandle_t lock;
   esp_timer_handle_t timer;
   enum BME680_SERVICE_STATE state;
   int64_t mesaurement_start;
+  TaskHandle_t task;
 
-  struct bme680_field_data res;
+  struct bme680_service_data res;
 
   bme680_service_cb cb;
   void* cb_priv;
@@ -50,6 +62,6 @@ struct bme680_service_rate {
 
 esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bus, uint8_t i2c_addr);
 
-void bme680_service_measure(struct bme680_service* service, struct bme680_field_data* meas);
+void bme680_service_measure(struct bme680_service* service, struct bme680_service_data* meas);
 
 void bme680_service_set_cb(struct bme680_service* service, bme680_service_cb cb, void* priv);

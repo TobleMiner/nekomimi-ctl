@@ -12,6 +12,7 @@ sensor_param_type_t sensors_param_get_type(sensor_param_t param) {
     case SENSOR_PARAM_HUMIDITY:
     case SENSOR_PARAM_PRESSURE:
     case SENSOR_PARAM_ILLUMINANCE:
+    case SENSOR_PARAM_IAQ:
       return SENSOR_PARAM_TYPE_UNARY;
     case SENSOR_PARAM_HFIELD:
       return SENSOR_PARAM_TYPE_TERNARY;

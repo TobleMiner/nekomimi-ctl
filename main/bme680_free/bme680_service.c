@@ -27,7 +27,9 @@ static void bme680_service_task(void* arg) {
     err = bme680_get_sensor_data(&meas, &service->bme.bme);
     if(!err) {
       xSemaphoreTake(service->lock, portMAX_DELAY);
-      service->res = meas;
+      service->res.temperature = meas.temperature;
+      service->res.humidity = meas.humidity;
+      service->res.pressure = meas.pressure;
       xSemaphoreGive(service->lock);
       if(service->cb) {
         service->cb(service->cb_priv);
@@ -71,7 +73,7 @@ fail:
   return err;
 }
 
-void bme680_service_measure(struct bme680_service* service, struct bme680_field_data* meas) {
+void bme680_service_measure(struct bme680_service* service, struct bme680_service_data* meas) {
   xSemaphoreTake(service->lock, portMAX_DELAY);
   *meas = service->res;
   xSemaphoreGive(service->lock);
