@@ -32,7 +32,7 @@ static esp_err_t bme680_sensor_get(struct sensor* sensor, sensor_param_t param, 
     case SENSOR_PARAM_PRESSURE:
       *res = meas.pressure;
       break;
-#ifdef NEKOMIMI_BME680_ALGO_PROPRIETARY
+#ifdef CONFIG_NEKOMIMI_BME680_ALGO_PROPRIETARY
     case SENSOR_PARAM_IAQ:
       *res = meas.iaq;
       break;
@@ -44,7 +44,7 @@ static esp_err_t bme680_sensor_get(struct sensor* sensor, sensor_param_t param, 
 }
 
 
-#ifdef NEKOMIMI_BME680_ALGO_PROPRIETARY
+#ifdef CONFIG_NEKOMIMI_BME680_ALGO_PROPRIETARY
 static esp_err_t bme680_sensor_ready(struct sensor* sensor, sensor_param_t param, bool* ready) {
   struct bme680_service_data meas;
   bme680_service_measure(&BME680_SENSOR_FROM_SENSOR(sensor)->bme, &meas);
@@ -79,7 +79,7 @@ static void bme680_sensor_cb(void* priv) {
   bool ready;
   uint8_t i = 0;
 
-#ifdef NEKOMIMI_BME680_ALGO_PROPRIETARY
+#ifdef CONFIG_NEKOMIMI_BME680_ALGO_PROPRIETARY
   sensor_param_t params[] = { SENSOR_PARAM_TEMPERATURE, SENSOR_PARAM_HUMIDITY, SENSOR_PARAM_PRESSURE, SENSOR_PARAM_IAQ };
 #else
   sensor_param_t params[] = { SENSOR_PARAM_TEMPERATURE, SENSOR_PARAM_HUMIDITY, SENSOR_PARAM_PRESSURE };
@@ -107,7 +107,7 @@ static esp_err_t bme680_sensor_init(struct sensor* sensor, struct i2c_bus* bus, 
 
 struct sensor_def bme680_sensor_def = {
   .name = "BME680",
-#ifdef NEKOMIMI_BME680_ALGO_PROPRIETARY
+#ifdef CONFIG_NEKOMIMI_BME680_ALGO_PROPRIETARY
   .type = SENSOR_PARAM_TEMPERATURE | SENSOR_PARAM_HUMIDITY | SENSOR_PARAM_PRESSURE | SENSOR_PARAM_IAQ,
 #else
   .type = SENSOR_PARAM_TEMPERATURE | SENSOR_PARAM_HUMIDITY | SENSOR_PARAM_PRESSURE,
