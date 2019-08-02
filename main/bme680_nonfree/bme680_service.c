@@ -60,7 +60,7 @@ static esp_err_t bme680_service_read_data(int64_t timestamp, struct bme680* bme,
 esp_err_t bme680_service_process_data(bsec_input_t *inputs, uint8_t num_inputs, struct bme680_service_data* data) {
   esp_err_t err;
   bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
-  uint8_t num_outputs = 0;  
+  uint8_t num_outputs = ARRAY_LEN(outputs);
 
   if(num_inputs == 0) {
     return ESP_OK;
@@ -72,6 +72,7 @@ esp_err_t bme680_service_process_data(bsec_input_t *inputs, uint8_t num_inputs, 
   }
 
   while(num_outputs--) {
+    ESP_LOGI(BME680_SERVICE_TAG, "Raw value of output %u: %f", num_outputs, outputs[num_outputs].signal);
     switch(outputs[num_outputs].sensor_id) {
       case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
         data->temperature = outputs[num_outputs].signal;
@@ -109,6 +110,8 @@ static void bme680_service_task(void* arg) {
 
     if(bme_settings.trigger_measurement) {
       uint16_t meas_dur_ms;
+      ESP_LOGI(BME680_SERVICE_TAG, "Triggering measurement");
+
       service->bme.bme.power_mode = BME680_FORCED_MODE;
 
       service->bme.bme.tph_sett.os_temp = bme_settings.temperature_oversampling;
@@ -129,37 +132,41 @@ static void bme680_service_task(void* arg) {
 
       bme680_get_sensor_mode(&service->bme.bme);
       while(service->bme.bme.power_mode == BME680_FORCED_MODE) {
+        ESP_LOGI(BME680_SERVICE_TAG, "Waiting for measurement completion");
         esp_timer_start_once(service->timer, 5000UL);
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         bme680_get_sensor_mode(&service->bme.bme);
       }
+      ESP_LOGI(BME680_SERVICE_TAG, "Measurement done");
     }    
 
     // Measurement finished
     if(bme_settings.process_data) {
+      ESP_LOGI(BME680_SERVICE_TAG, "Reading measured data");
       bme680_service_read_data(measure_begin, &service->bme, bsec_inputs, &num_inputs, bme_settings.process_data);
+      ESP_LOGI(BME680_SERVICE_TAG, "Got %u data", num_inputs);
     }
 
     bme680_service_process_data(bsec_inputs, num_inputs, &data);
 
 
     xSemaphoreTake(service->lock, portMAX_DELAY);
-    if(service->res.temperature_ready) {
+    if(data.temperature_ready) {
       service->res.temperature = data.temperature;
       service->res.temperature_ready = true;
       updated = true;
     }
-    if(service->res.humidity_ready) {
+    if(data.humidity_ready) {
       service->res.humidity = data.humidity;
       service->res.humidity_ready = true;
       updated = true;
     }
-    if(service->res.pressure_ready) {
+    if(data.pressure_ready) {
       service->res.pressure = data.pressure;
       service->res.pressure_ready = true;
       updated = true;
     }
-    if(service->res.iaq_ready) {
+    if(data.iaq_ready) {
       service->res.iaq = data.iaq;
       service->res.iaq_ready = true;
       updated = true;
@@ -167,6 +174,13 @@ static void bme680_service_task(void* arg) {
     xSemaphoreGive(service->lock);  
     if(updated && service->cb) {
       service->cb(service->cb_priv);
+    }
+
+    int64_t measure_wait = (bme_settings.next_call - esp_timer_get_time() * 1000LL) / 1000LL;
+    if(measure_wait > 0) {
+        ESP_LOGI(BME680_SERVICE_TAG, "Sleeping for %lld us", measure_wait);
+        esp_timer_start_once(service->timer, measure_wait);
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);    
     }
   }
 }
@@ -233,6 +247,7 @@ esp_err_t bme680_service_init(struct bme680_service* service, struct i2c_bus* bu
     goto fail_timer;
   }
 
+  service->num_required_sensor_settings = ARRAY_LEN(service->required_sensor_settings);
   err = bme680_service_bsec_update_subscription(&rate, service->required_sensor_settings, &service->num_required_sensor_settings);
   if(err) {
     ESP_LOGE(BME680_SERVICE_TAG, "Failed to set intial BME680 BSEC subscription");
