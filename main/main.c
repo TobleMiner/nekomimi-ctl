@@ -234,6 +234,7 @@ void app_main(void) {
       sensor_result_t temperature;
       sensor_result_t humidity;
       sensor_result_t pressure;
+      sensor_result_t iaq;
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_ILLUMINANCE, &lux, sizeof(lux)));
       ESP_LOGI("BH1750", "%.4f Lux", lux);
       lis3mdl_service_measure_raw(&lis, &res);
@@ -251,6 +252,9 @@ void app_main(void) {
       ESP_LOGI("BME680", "Temperature: %.2f °C", temperature);
       ESP_LOGI("BME680", "R. Humidity: %.2f %%", humidity);
       ESP_LOGI("BME680", "Pressure: %.2f hPa", pressure / 100.0);
+      if(!sensors_get_result(&sensors, SENSOR_PARAM_IAQ, &iaq, sizeof(iaq))) {
+        ESP_LOGI("BME680", "IAQ: %.2f", iaq);
+      }
       for(int i = 0; i < tlc.chain_len; i++) {
         ESP_LOGI("power_governor", "Average power consumption: %u mW", tlc.pwr_gov[i].power_avg_mw);
         ESP_LOGI("power_governor", "Current power consumption: %u mW", tlc_power_gov_current_power_mw(&tlc.pwr_gov[i]));
