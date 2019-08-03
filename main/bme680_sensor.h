@@ -1,5 +1,7 @@
 #pragma once
 
+#include "sdkconfig.h"
+
 #include "sensor.h"
 #include "bme680_service.h"
 
