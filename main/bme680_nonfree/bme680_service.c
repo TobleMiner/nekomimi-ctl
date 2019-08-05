@@ -72,7 +72,6 @@ esp_err_t bme680_service_process_data(bsec_input_t *inputs, uint8_t num_inputs, 
   }
 
   while(num_outputs--) {
-    ESP_LOGI(BME680_SERVICE_TAG, "Raw value of output %u: %f", num_outputs, outputs[num_outputs].signal);
     switch(outputs[num_outputs].sensor_id) {
       case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
         data->temperature = outputs[num_outputs].signal;
@@ -110,7 +109,6 @@ static void bme680_service_task(void* arg) {
 
     if(bme_settings.trigger_measurement) {
       uint16_t meas_dur_ms;
-      ESP_LOGI(BME680_SERVICE_TAG, "Triggering measurement");
 
       service->bme.bme.power_mode = BME680_FORCED_MODE;
 
@@ -132,19 +130,15 @@ static void bme680_service_task(void* arg) {
 
       bme680_get_sensor_mode(&service->bme.bme);
       while(service->bme.bme.power_mode == BME680_FORCED_MODE) {
-        ESP_LOGI(BME680_SERVICE_TAG, "Waiting for measurement completion");
         esp_timer_start_once(service->timer, 5000UL);
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         bme680_get_sensor_mode(&service->bme.bme);
       }
-      ESP_LOGI(BME680_SERVICE_TAG, "Measurement done");
     }    
 
     // Measurement finished
     if(bme_settings.process_data) {
-      ESP_LOGI(BME680_SERVICE_TAG, "Reading measured data");
       bme680_service_read_data(measure_begin, &service->bme, bsec_inputs, &num_inputs, bme_settings.process_data);
-      ESP_LOGI(BME680_SERVICE_TAG, "Got %u data", num_inputs);
     }
 
     bme680_service_process_data(bsec_inputs, num_inputs, &data);
@@ -178,7 +172,6 @@ static void bme680_service_task(void* arg) {
 
     int64_t measure_wait = (bme_settings.next_call - esp_timer_get_time() * 1000LL) / 1000LL;
     if(measure_wait > 0) {
-        ESP_LOGI(BME680_SERVICE_TAG, "Sleeping for %lld us", measure_wait);
         esp_timer_start_once(service->timer, measure_wait);
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);    
     }
