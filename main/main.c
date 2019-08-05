@@ -252,7 +252,8 @@ void app_main(void) {
       ESP_LOGI("BME680", "Temperature: %.2f °C", temperature);
       ESP_LOGI("BME680", "R. Humidity: %.2f %%", humidity);
       ESP_LOGI("BME680", "Pressure: %.2f hPa", pressure / 100.0);
-      if(!sensors_get_result(&sensors, SENSOR_PARAM_IAQ, &iaq, sizeof(iaq))) {
+      if(sensors_has_sensor(&sensors, SENSOR_PARAM_IAQ)) {
+        sensors_get_result(&sensors, SENSOR_PARAM_IAQ, &iaq, sizeof(iaq));
         ESP_LOGI("BME680", "IAQ: %.2f", iaq);
       }
       for(int i = 0; i < tlc.chain_len; i++) {

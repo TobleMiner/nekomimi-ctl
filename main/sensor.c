@@ -89,6 +89,18 @@ esp_err_t sensors_subscribe(struct sensor_manager* mgr, sensor_param_t param, se
   return ESP_OK;
 }
 
+bool sensors_has_sensor(struct sensor_manager* mgr, sensor_param_t param) {
+  struct list_head* cursor;
+
+  LIST_FOR_EACH(cursor, &mgr->sensors) {
+    struct sensor* sensor = LIST_GET_ENTRY(cursor, struct sensor, list);
+    if(sensor->def->type & param) {
+      return true;
+    }
+  }
+  return false;
+}
+
 esp_err_t sensors_get_result(struct sensor_manager* mgr, sensor_param_t param, sensor_result_t* res, size_t len) {
   esp_err_t err;
   struct list_head* cursor;
