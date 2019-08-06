@@ -1,13 +1,124 @@
 menu "Nekomimi"
 
-choice NEKOMIMI_BME680_ALGO
-  prompt "BME680 algorithm"
+  menu "Sensors"
 
-  config NEKOMIMI_BME680_ALGO_FREE
-    bool "Worse open source algorithm"
+    menu "I2C bus"
+      choice NEKOMIMI_SENSOR_I2C
+        prompt "Sensor I2C peripheral"
 
-  config NEKOMIMI_BME680_ALGO_PROPRIETARY
-    bool "Proprietary Bosch BSEC library"
-endchoice
+        config NEKOMIMI_SENSOR_I2C_0
+          bool "I2C peripheral 0"
+
+        config NEKOMIMI_SENSOR_I2C_1
+          bool "I2C peripheral 1"
+      endchoice
+
+      config NEKOMIMI_SENSOR_I2C_GPIO_SDA
+        int "SDA GPIO"
+        default 26
+        range 0 33
+
+      config NEKOMIMI_SENSOR_I2C_GPIO_SCL
+        int "SCL GPIO"
+        default 25
+        range 0 33
+
+      config NEKOMIMI_SENSOR_I2C_FREQ
+        int "I2C clock frequency"
+        default 100000
+
+    endmenu
+
+    menu "Environmental sensor"
+      choice NEKOMIMI_SENSOR_ENVIRON
+        prompt "Environmental sensor type"
+
+        config NEKOMIMI_SENSOR_ENVIRON_BME680
+          bool "Bosch BME680"
+      endchoice
+
+      choice NEKOMIMI_SENSOR_ENVIRON_BME680_ADDR
+        prompt "BME680 I2C address"
+
+        config NEKOMIMI_SENSOR_ENVIRON_BME680_ADDR_SEC
+          bool "Secondary I2C address (0x77)"
+
+        config NEKOMIMI_SENSOR_ENVIRON_BME680_ADDR_PRIM
+          bool "Primary I2C address (0x76)"
+      endchoice
+
+      choice NEKOMIMI_BME680_ALGO
+        prompt "BME680 algorithm"
+
+        config NEKOMIMI_BME680_ALGO_FREE
+          bool "Worse open source algorithm"
+
+        config NEKOMIMI_BME680_ALGO_PROPRIETARY
+          bool "Proprietary Bosch BSEC library"
+      endchoice
+
+    endmenu
+
+    menu "Illuminance sensor"
+      choice NEKOMIMI_SENSOR_ILLUMINANCE
+        prompt "Illuminance sensor type"
+
+        config NEKOMIMI_SENSOR_ILLUMINANCE_BH1750
+          bool "ROHM BH1750"
+      endchoice
+
+      choice NEKOMIMI_SENSOR_ILLUMINANCE_BH1750_ADDR
+        prompt "BH1750 I2C address"
+
+        config NEKOMIMI_SENSOR_ILLUMINANCE_BH1750_ADDR_L
+          bool "Low I2C address (0x23)"
+
+        config NEKOMIMI_SENSOR_ILLUMINANCE_BH1750_ADDR_H
+          bool "High I2C address (0x5c)"
+      endchoice
+
+    endmenu
+
+  endmenu
+
+
+  menu "Ears"
+
+  choice NEKOMIMI_EAR_SPI
+    prompt "TLC SPI"
+
+    config NEKOMIMI_EAR_SPI_HSPI
+      bool "Use HSPI for ears"
+
+    config NEKOMIMI_EAR_SPI_VSPI
+      bool "Use VSPI for ears"
+  endchoice
+
+  config NEKOMIMI_EAR_NUM
+    int "Number of connected ears"
+    default 2
+    range 0 2048
+
+  config NEKOMIMI_EAR_VOLTAGE
+    int "Supply voltage of ears in mV"
+    default 4000
+    range 0 11000
+
+  config NEKOMIMI_EAR_TDP_LIMIT
+    int "TDP target of each ear in mW"
+    default 1000
+    range 0 65535
+
+  config NEKOMIMI_EAR_GPIO_PWM_CLK
+    int "PWM clock GPIO"
+    default 32
+    range 0 33
+
+  config NEKOMIMI_EAR_GPIO_LATCH
+    int "Latch GPIO"
+    default 33
+    range 0 33
+
+  endmenu
 
 endmenu
