@@ -127,7 +127,7 @@ esp_err_t bme_init(struct bme680* bme, struct i2c_bus* i2c_bus, uint8_t i2c_addr
 
   err = bme680_init(&bme->bme);
   if(err) {
-    ESP_LOGE(BME680_TAG, "Failed to initialize BME680");
+    ESP_LOGE(BME680_TAG, "Failed to initialize BME680@%02x", i2c_addr);
     return err;
   }
 
