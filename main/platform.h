@@ -8,6 +8,7 @@
 #include "sensor.h"
 #include "bh1750_sensor.h"
 #include "bme680_sensor.h"
+#include "lis3mdl_sensor.h"
 
 #define PLATFORM_TAG "nekomimi_plat"
 

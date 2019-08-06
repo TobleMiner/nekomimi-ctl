@@ -31,7 +31,7 @@ static void bh1750_sensor_cb(void* priv) {
   sensors_report_result(sensor, SENSOR_PARAM_ILLUMINANCE, &res, sizeof(res));
 }
 
-static esp_err_t bh1750_sensor_init(struct sensor* sensor, struct i2c_bus* bus, uint8_t i2c_addr) {
+static esp_err_t bh1750_sensor_init(struct sensor* sensor, struct i2c_bus* bus, uint8_t i2c_addr, void* args) {
   esp_err_t err;
   struct bh1750_service* bh = &BH1750_SENSOR_FROM_SENSOR(sensor)->bh;
   err = bh1750_service_init(bh, bus, i2c_addr);

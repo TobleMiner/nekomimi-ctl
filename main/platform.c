@@ -20,6 +20,12 @@ static esp_err_t platform_bus_init(struct i2c_bus* i2c_sensors) {
 }
 
 static esp_err_t platform_sensor_init(struct i2c_bus* i2c_sensors) {
+#ifdef NEKOMIMI_SENSOR_USE_LIS3MDL
+  struct lis3mdl_sensor_args lis_args = {
+    .gpio_drdy = SENSOR_LIS3MDL_GPIO_DRDY,
+    .gpio_int = SENSOR_LIS3MDL_GPIO_INT,
+  };
+#endif
   esp_err_t err = sensors_init(&sensors);
   if(err) {
     ESP_LOGE(PLATFORM_TAG, "Failed to initialize sensor layer");
@@ -27,7 +33,7 @@ static esp_err_t platform_sensor_init(struct i2c_bus* i2c_sensors) {
   }
 
 #ifdef NEKOMIMI_SENSOR_USE_BME680
-  err = sensors_add_sensor(&sensors, &bme680_sensor_def, i2c_sensors, SENSOR_BME680_ADDR);
+  err = sensors_add_sensor(&sensors, &bme680_sensor_def, i2c_sensors, SENSOR_BME680_ADDR, NULL);
   if(err) {
     ESP_LOGE(PLATFORM_TAG, "Failed to initialize Bosch BME680");
     return err;
@@ -35,9 +41,17 @@ static esp_err_t platform_sensor_init(struct i2c_bus* i2c_sensors) {
 #endif
 
 #ifdef NEKOMIMI_SENSOR_USE_BH1750
-  err = sensors_add_sensor(&sensors, &bh1750_sensor_def, i2c_sensors, SENSOR_BH1750_ADDR);
+  err = sensors_add_sensor(&sensors, &bh1750_sensor_def, i2c_sensors, SENSOR_BH1750_ADDR, NULL);
   if(err) {
     ESP_LOGE(PLATFORM_TAG, "Failed to initialize BH1750");
+    return err;
+  }
+#endif
+
+#ifdef NEKOMIMI_SENSOR_USE_LIS3MDL
+  err = sensors_add_sensor(&sensors, &lis3mdl_sensor_def, i2c_sensors, SENSOR_LIS3MDL_ADDR, &lis_args);
+  if(err) {
+    ESP_LOGE(PLATFORM_TAG, "Failed to initialize LIS3MDL");
     return err;
   }
 #endif

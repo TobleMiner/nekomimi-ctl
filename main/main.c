@@ -66,9 +66,6 @@ static void illuminance_cb(struct sensor_manager* mgr, struct sensor* sensor, se
 
 void app_main(void) {
   ESP_ERROR_CHECK(platform_init());
-//  struct lis3mdl_service lis;
-
-//  ESP_ERROR_CHECK(lis3mdl_service_init(&lis, &i2c1, LIS3MDL_ADDR_L, 36));
 
   // Sensors
   ESP_ERROR_CHECK(sensors_subscribe(&sensors, SENSOR_PARAM_ILLUMINANCE, illuminance_cb, NULL));
@@ -142,7 +139,7 @@ void app_main(void) {
   int count = 0;
   while(1) {
     if(!(count % 20)) {
-//      struct lis3mdl_result res;
+      sensor_result_t magneto[3];
       sensor_result_t lux;
       sensor_result_t temperature;
       sensor_result_t humidity;
@@ -150,16 +147,15 @@ void app_main(void) {
       sensor_result_t iaq;
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_ILLUMINANCE, &lux, sizeof(lux)));
       ESP_LOGI("BH1750", "%.4f Lux", lux);
-/*      lis3mdl_service_measure_raw(&lis, &res);
-      ESP_LOGI("LIS3MDL", "X: %d", res.x);
-      ESP_LOGI("LIS3MDL", "Y: %d", res.y);
-      ESP_LOGI("LIS3MDL", "Z: %d", res.z);
-      ESP_LOGI("LIS3MDL", "Temp: %d", res.temp);
-      float x = res.x;
-      float y = res.y;
+      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_BFIELD, magneto, sizeof(magneto)));
+      ESP_LOGI("LIS3MDL", "X: %f", magneto[0]);
+      ESP_LOGI("LIS3MDL", "Y: %f", magneto[1]);
+      ESP_LOGI("LIS3MDL", "Z: %f", magneto[2]);
+      float x = magneto[0];
+      float y = magneto[1];
       float angle = atanf(x / y) / M_PI * 180.0;
       ESP_LOGI("LIS3MDL", "Angle: %.3f\n", angle);
-*/
+
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_TEMPERATURE, &temperature, sizeof(temperature)));
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_HUMIDITY, &humidity, sizeof(humidity)));
       ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_PRESSURE, &pressure, sizeof(pressure)));

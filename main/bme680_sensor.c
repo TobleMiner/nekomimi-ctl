@@ -93,7 +93,7 @@ static void bme680_sensor_cb(void* priv) {
   }
 }
 
-static esp_err_t bme680_sensor_init(struct sensor* sensor, struct i2c_bus* bus, uint8_t i2c_addr) {
+static esp_err_t bme680_sensor_init(struct sensor* sensor, struct i2c_bus* bus, uint8_t i2c_addr, void* args) {
   esp_err_t err;
   struct bme680_service* bme = &BME680_SENSOR_FROM_SENSOR(sensor)->bme;
   err = bme680_service_init(bme, bus, i2c_addr);

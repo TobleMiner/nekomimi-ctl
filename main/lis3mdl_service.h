@@ -16,6 +16,8 @@
 
 #define LIS3MDL_SERVICE_AVG_LEN 50
 
+typedef void (*lis3mdl_service_cb)(void* priv);
+
 struct lis3mdl_service {
   struct lis3mdl lis;
   struct lis3mdl_result res;
@@ -27,8 +29,13 @@ struct lis3mdl_service {
 
   struct lis3mdl_result min;
   struct lis3mdl_result max;
+
+  lis3mdl_service_cb cb;
+  void* cb_priv;
 };
 
 esp_err_t lis3mdl_service_init(struct lis3mdl_service* service, struct i2c_bus* bus, uint8_t i2c_addr, int drdy_gpio);
 
 void lis3mdl_service_measure_raw(struct lis3mdl_service* service, struct lis3mdl_result* res);
+
+void lis3mdl_service_set_cb(struct lis3mdl_service* service, lis3mdl_service_cb cb, void* priv);

@@ -79,6 +79,36 @@ menu "Nekomimi"
 
     endmenu
 
+    menu "Magnetometer"
+      choice NEKOMIMI_SENSOR_MAGNETO
+        prompt "Magnetometer sensor type"
+
+        config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL
+          bool "STMicroelectronics LIS3MDL"
+      endchoice
+
+      choice NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_ADDR
+        prompt "LIS3MDL I2C address"
+
+        config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_ADDR_L
+          bool "Low I2C address (0x1c)"
+
+        config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_ADDR_H
+          bool "Low I2C address (0x1e)"
+      endchoice
+
+      config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_GPIO_DRDY
+        int "DRDY irq GPIO"
+        default 36
+        range 0 39
+
+      config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_GPIO_INT
+        int "INT irq GPIO"
+        default 39
+        range 0 39
+
+    endmenu
+
   endmenu
 
 

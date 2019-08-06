@@ -48,6 +48,9 @@ static void lis3mdl_service_task(void* arg) {
       service->avg_buf[service->avg_buf_write_ptr++] = res;
       service->avg_buf_write_ptr %= ARRAY_LEN(service->avg_buf);
       xSemaphoreGive(service->lock);
+      if(service->cb) {
+        service->cb(service->cb_priv);
+      }
     }
   }
 }
@@ -136,4 +139,10 @@ void lis3mdl_service_measure_raw(struct lis3mdl_service* service, struct lis3mdl
   res->temp = temp;
 //  *res = service->res;
   xSemaphoreGive(service->lock);
+}
+
+void lis3mdl_service_set_cb(struct lis3mdl_service* service, lis3mdl_service_cb cb, void* priv) {
+  service->cb_priv = priv;
+  __sync_synchronize();
+  service->cb = cb;
 }

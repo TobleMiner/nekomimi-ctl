@@ -71,6 +71,7 @@ float bh1750_service_get_illuminance(struct bh1750_service* service) {
 }
 
 void bh1750_service_set_cb(struct bh1750_service* service, bh1750_service_cb cb, void* priv) {
-  service->cb = cb;
   service->cb_priv = priv;
+  __sync_synchronize();
+  service->cb = cb;
 }

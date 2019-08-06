@@ -14,7 +14,7 @@ sensor_param_type_t sensors_param_get_type(sensor_param_t param) {
     case SENSOR_PARAM_ILLUMINANCE:
     case SENSOR_PARAM_IAQ:
       return SENSOR_PARAM_TYPE_UNARY;
-    case SENSOR_PARAM_HFIELD:
+    case SENSOR_PARAM_BFIELD:
       return SENSOR_PARAM_TYPE_TERNARY;
 
     default:
@@ -38,7 +38,7 @@ esp_err_t sensors_init(struct sensor_manager* mgr) {
   return ESP_OK;
 }
 
-esp_err_t sensors_add_sensor(struct sensor_manager* mgr, struct sensor_def* def, struct i2c_bus* bus, uint8_t i2c_addr) {
+esp_err_t sensors_add_sensor(struct sensor_manager* mgr, struct sensor_def* def, struct i2c_bus* bus, uint8_t i2c_addr, void* args) {
   esp_err_t err;
   struct sensor* sensor;
 
@@ -52,7 +52,7 @@ esp_err_t sensors_add_sensor(struct sensor_manager* mgr, struct sensor_def* def,
   sensor->mgr = mgr;
   sensor->def = def;
 
-  err = def->ops.init(sensor, bus, i2c_addr);
+  err = def->ops.init(sensor, bus, i2c_addr, args);
   if(err) {
     goto fail_alloc;
   }
