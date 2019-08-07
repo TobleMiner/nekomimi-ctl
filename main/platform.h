@@ -14,5 +14,6 @@
 
 extern struct sensor_manager sensors;
 extern struct tlc_chain ears;
+extern struct i2c_bus i2c_sensors;
 
 esp_err_t platform_init();
