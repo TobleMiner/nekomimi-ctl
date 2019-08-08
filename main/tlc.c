@@ -29,9 +29,9 @@ static void tlc_ctl_init(struct tlc_ctl* ctl) {
   memset(ctl, 0, sizeof(*ctl));
   memset(ctl->dc.data, 0xFF, sizeof(ctl->dc.data));
 
-  ctl->mcr = 0b100; // 19.1 mA
-  ctl->mcg = 0b100; // 19.1 mA
-  ctl->mcb = 0b100; // 19.1 mA
+  ctl->mcr = 0b000; // 3.2 mA
+  ctl->mcg = 0b000; // 3.2 mA
+  ctl->mcb = 0b000; // 3.2 mA
 
   ctl->bcr = 127;
   ctl->bcg = 127;
@@ -286,4 +286,43 @@ fail_pwm:
   free(tlc->gs_data);
 fail:
   return err;
+}
+
+esp_err_t tlc_set_led_current(struct tlc_chain* tlc, unsigned int index, tlc_col_chan_t chan, tlc_current_t current) {
+  struct tlc_ctl* ctl;
+  if(current > _TLC_CURRENT_LIMIT) {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  if(index >= tlc->chain_len) {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  ctl = &tlc->ctl_data[index];
+  if(chan & TLC_COLOR_CHANNEL_RED) {
+    ctl->mcr = current;
+  }
+
+  if(chan & TLC_COLOR_CHANNEL_GREEN) {
+    ctl->mcg = current;
+  }
+
+  if(chan & TLC_COLOR_CHANNEL_BLUE) {
+    ctl->mcb = current;
+  }
+
+  return ESP_OK;
+}
+
+esp_err_t tlc_set_led_current_all(struct tlc_chain* tlc, tlc_col_chan_t chan, tlc_current_t current) {
+  esp_err_t err;
+  unsigned int i;
+  for(i = 0; i < tlc->chain_len; i++) {
+    err = tlc_set_led_current(tlc, i, chan, current);
+    if(err) {
+      return err;
+    }
+  }
+
+  return ESP_OK;
 }

@@ -45,3 +45,7 @@ static inline bool platform_has_sensor(struct sensor_manager* mgr, sensor_param_
 static inline esp_err_t platform_get_sensor_result(sensor_param_t param, sensor_result_t* res, size_t len) {
   return sensors_get_result(&sensors, param, res, len);
 }
+
+static inline unsigned int platform_get_num_ears() {
+  return ears.chain_len;
+}

@@ -59,7 +59,16 @@ static esp_err_t platform_sensor_init() {
 }
 
 static esp_err_t platform_ear_init() {
-  return ear_init(&ears, EAR_CNT, EAR_GPIO_PWM_CLK, EAR_GPIO_LATCH, EAR_SPI);
+  esp_err_t err;
+  if((err = ear_init(&ears, EAR_CNT, EAR_GPIO_PWM_CLK, EAR_GPIO_LATCH, EAR_SPI))) {
+    return err;
+  }
+
+  if((err = tlc_set_led_current_all(&ears, TLC_COLOR_CHANNEL_ALL, EAR_DEFAULT_CURRENT))) {
+    return err;
+  }
+
+  return ESP_OK;
 }
 
 esp_err_t platform_init() {

@@ -148,6 +148,34 @@ menu "Nekomimi"
     default 1000
     range 0 65535
 
+  choice NEKOMIMI_EAR_DEFAULT_CURRENT
+    prompt "Default LED current"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_3_2_mA
+      bool "3.2 mA"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_8_0_mA
+      bool "8.0 mA"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_11_2_mA
+      bool "11.2 mA"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_15_9_mA
+      bool "15.9 mA"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_19_1_mA
+      bool "19.1 mA"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_23_9_mA
+      bool "23.9 mA"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_27_1_mA
+      bool "27.1 mA"
+
+    config NEKOMIMI_EAR_DEFAULT_CURRENT_31_9_mA
+      bool "31.9 mA"
+  endchoice
+
   config NEKOMIMI_EAR_GPIO_PWM_CLK
     int "PWM clock GPIO"
     default 32

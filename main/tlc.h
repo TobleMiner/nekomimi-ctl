@@ -107,4 +107,27 @@ struct tlc_chain {
   } gpio;
 };
 
+#define TLC_COLOR_CHANNEL_RED   0b001
+#define TLC_COLOR_CHANNEL_GREEN 0b010
+#define TLC_COLOR_CHANNEL_BLUE  0b100
+#define TLC_COLOR_CHANNEL_ALL   (TLC_COLOR_CHANNEL_RED | TLC_COLOR_CHANNEL_GREEN | TLC_COLOR_CHANNEL_BLUE)
+
+typedef uint8_t tlc_col_chan_t;
+
+
+#define TLC_CURRENT_3_2_mA  0b000
+#define TLC_CURRENT_8_0_mA  0b001
+#define TLC_CURRENT_11_2_mA 0b010
+#define TLC_CURRENT_15_9_mA 0b011
+#define TLC_CURRENT_19_1_mA 0b100
+#define TLC_CURRENT_23_9_mA 0b101
+#define TLC_CURRENT_27_1_mA 0b110
+#define TLC_CURRENT_31_9_mA 0b111
+#define _TLC_CURRENT_LIMIT  TLC_CURRENT_31_9_mA
+
+typedef uint8_t tlc_current_t;
+
 esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi);
+
+esp_err_t tlc_set_led_current(struct tlc_chain* tlc, unsigned int index, tlc_col_chan_t chan, tlc_current_t current);
+esp_err_t tlc_set_led_current_all(struct tlc_chain* tlc, tlc_col_chan_t chan, tlc_current_t current);
