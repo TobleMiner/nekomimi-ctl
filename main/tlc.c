@@ -180,6 +180,9 @@ static void tlc_sleep(struct tlc_chain* tlc, uint64_t time_us) {
 static void tlc_update_task(void* arg) {
   struct tlc_chain* tlc = arg;
   while(1) {
+    int64_t update_start = esp_timer_get_time();
+    int64_t update_dt;
+    int64_t sleep_time;
     for(int i = 0; i < tlc->chain_len; i++) {
       uint8_t dim;
       tlc->ctl_data[i].bcr = 127;
@@ -205,7 +208,11 @@ static void tlc_update_task(void* arg) {
 //    vTaskDelay(1 / portTICK_PERIOD_MS);
     LO(tlc->gpio.latch);
 
-    tlc_sleep(tlc, 10000UL);
+    update_dt = esp_timer_get_time() - update_start;
+    sleep_time = 10000LL - update_dt;
+    if(sleep_time > 0) {
+      tlc_sleep(tlc, sleep_time);
+    }
 //    vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
