@@ -35,10 +35,13 @@ menu "Nekomimi"
 
         config NEKOMIMI_SENSOR_ENVIRON_BME680
           bool "Bosch BME680"
+
+        config NEKOMIMI_SENSOR_ENVIRON_NONE
+          bool "None"
       endchoice
 
       choice NEKOMIMI_SENSOR_ENVIRON_BME680_ADDR
-        prompt "BME680 I2C address"
+        prompt "BME680 I2C address" if NEKOMIMI_SENSOR_ENVIRON_BME680
 
         config NEKOMIMI_SENSOR_ENVIRON_BME680_ADDR_SEC
           bool "Secondary I2C address (0x77)"
@@ -48,7 +51,7 @@ menu "Nekomimi"
       endchoice
 
       choice NEKOMIMI_BME680_ALGO
-        prompt "BME680 algorithm"
+        prompt "BME680 algorithm" if NEKOMIMI_SENSOR_ENVIRON_BME680
 
         config NEKOMIMI_BME680_ALGO_FREE
           bool "Worse open source algorithm"
@@ -65,10 +68,13 @@ menu "Nekomimi"
 
         config NEKOMIMI_SENSOR_ILLUMINANCE_BH1750
           bool "ROHM BH1750"
+
+        config NEKOMIMI_SENSOR_ILLUMINANCE_NONE
+          bool "None"
       endchoice
 
       choice NEKOMIMI_SENSOR_ILLUMINANCE_BH1750_ADDR
-        prompt "BH1750 I2C address"
+        prompt "BH1750 I2C address" if NEKOMIMI_SENSOR_ILLUMINANCE_BH1750
 
         config NEKOMIMI_SENSOR_ILLUMINANCE_BH1750_ADDR_L
           bool "Low I2C address (0x23)"
@@ -85,10 +91,13 @@ menu "Nekomimi"
 
         config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL
           bool "STMicroelectronics LIS3MDL"
+
+        config NEKOMIMI_SENSOR_MAGNETO_NONE
+          bool "None"
       endchoice
 
       choice NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_ADDR
-        prompt "LIS3MDL I2C address"
+        prompt "LIS3MDL I2C address" if NEKOMIMI_SENSOR_MAGNETO_LIS3MDL
 
         config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_ADDR_L
           bool "Low I2C address (0x1c)"
@@ -98,12 +107,12 @@ menu "Nekomimi"
       endchoice
 
       config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_GPIO_DRDY
-        int "DRDY irq GPIO"
+        int "DRDY irq GPIO" if NEKOMIMI_SENSOR_MAGNETO_LIS3MDL
         default 36
         range 0 39
 
       config NEKOMIMI_SENSOR_MAGNETO_LIS3MDL_GPIO_INT
-        int "INT irq GPIO"
+        int "INT irq GPIO" if NEKOMIMI_SENSOR_MAGNETO_LIS3MDL
         default 39
         range 0 39
 
