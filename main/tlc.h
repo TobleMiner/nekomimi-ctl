@@ -3,7 +3,10 @@
 #include <esp_err.h>
 #include <stdint.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <driver/spi_master.h>
+#include <esp_timer.h>
 
 #define TLC_TAG "TLC5955"
 
@@ -105,6 +108,8 @@ struct tlc_chain {
   struct {
     int latch;
   } gpio;
+  TaskHandle_t         task;
+  esp_timer_handle_t   timer;
 };
 
 #define TLC_COLOR_CHANNEL_RED   0b001

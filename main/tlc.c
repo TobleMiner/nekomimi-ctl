@@ -172,6 +172,11 @@ static void tlc_xmitn(struct tlc_chain* tlc, void* data, size_t len, size_t num)
   }
 }
 
+static void tlc_sleep(struct tlc_chain* tlc, uint64_t time_us) {
+  esp_timer_start_once(tlc->timer, time_us);
+  ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+}
+
 static void tlc_update_task(void* arg) {
   struct tlc_chain* tlc = arg;
   while(1) {
@@ -190,23 +195,37 @@ static void tlc_update_task(void* arg) {
     }
     tlc_xmitn(tlc, tlc->gs_data, sizeof(struct tlc_gs), tlc->chain_len);
     HI(tlc->gpio.latch);
-    vTaskDelay(1 / portTICK_PERIOD_MS);
+    tlc_sleep(tlc, 1);
+//    vTaskDelay(1 / portTICK_PERIOD_MS);
     LO(tlc->gpio.latch);
 
     tlc_xmitn(tlc, tlc->ctl_data, sizeof(struct tlc_ctl), tlc->chain_len);
     HI(tlc->gpio.latch);
-    vTaskDelay(1 / portTICK_PERIOD_MS);
+    tlc_sleep(tlc, 1);
+//    vTaskDelay(1 / portTICK_PERIOD_MS);
     LO(tlc->gpio.latch);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    tlc_sleep(tlc, 10000UL);
+//    vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
 
+
+static void tlc_timer_cb(void* arg) {
+  struct tlc_chain* tlc = arg;
+  xTaskNotifyGive(tlc->task);
+};
 
 // Public API
 esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_latch, spi_host_device_t spi) {
   esp_err_t err;
   int i;
+  esp_timer_create_args_t timer_args = {
+    .callback = tlc_timer_cb,
+    .arg = tlc,
+    .dispatch_method = ESP_TIMER_TASK,
+    .name = "tlc_timer",
+  };
 
   memset(tlc, 0, sizeof(*tlc));
 
@@ -218,11 +237,14 @@ esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_
   tlc_gpio_init(27);
   HI(27);	
 
+  if((err = esp_timer_create(&timer_args, &tlc->timer))) {
+    goto fail;
+  }
 
 
   if(!(tlc->gs_data = calloc(len, sizeof(struct tlc_gs)))) {
     err = ESP_ERR_NO_MEM;
-    goto fail;
+    goto fail_timer;
   }
   if(!(tlc->ctl_data = calloc(len, sizeof(struct tlc_ctl)))) {
     err = ESP_ERR_NO_MEM;
@@ -270,7 +292,7 @@ esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_
     goto fail_buff;
   }
 
-  if((err = xTaskCreate(tlc_update_task, "tlc_srv", TLC_STACK, tlc, 12, NULL)) != pdPASS) {
+  if((err = xTaskCreate(tlc_update_task, "tlc_srv", TLC_STACK, tlc, 12, &tlc->task)) != pdPASS) {
     goto fail_buff;
   }
 
@@ -284,6 +306,8 @@ fail_dc:
   free(tlc->ctl_data);
 fail_pwm:
   free(tlc->gs_data);
+fail_timer:
+  esp_timer_delete(tlc->timer);
 fail:
   return err;
 }
