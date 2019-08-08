@@ -68,7 +68,7 @@ void app_main(void) {
   ESP_ERROR_CHECK(platform_init());
 
   // Sensors
-  ESP_ERROR_CHECK(sensors_subscribe(&sensors, SENSOR_PARAM_ILLUMINANCE, illuminance_cb, NULL));
+  ESP_ERROR_CHECK(platform_subscribe_sensor(SENSOR_PARAM_ILLUMINANCE, illuminance_cb, NULL));
 
   // EARS
 
@@ -108,7 +108,7 @@ void app_main(void) {
   for(int k = 0; k < 3 * 3; k++) {
     for(int i = 0; i < ears.chain_len; i++) {
       for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
-        ear_set_led_rgb888(&ears, i, j, 255 * MOD(k, 3, 0), 255 * MOD(k, 3, 1), 255 * MOD(k, 3, 2));
+        platform_set_led_rgb888(i, j, 255 * MOD(k, 3, 0), 255 * MOD(k, 3, 1), 255 * MOD(k, 3, 2));
       }
     }
     vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -119,16 +119,16 @@ void app_main(void) {
 #ifdef UV
     for(int j = 0; j < NUM_UV_PER_EAR; j++) {
       printf("Enabling UV led %d %d\n", i, j);
-      ear_set_led_uv8(&ears, i, j, 0xFF);
+      platform_set_led_uv8(i, j, 0xFF);
     }
 #endif
     for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
-      ear_set_led_rgb888(&ears, i, j, 0, 0, 0);
+      platform_set_led_rgb888(i, j, 0, 0, 0);
 #ifdef WHITE
-      ear_set_led_rgb888(&ears, i, j, 255, 255, 255);
+      platform_set_led_rgb888(i, j, 255, 255, 255);
 #endif
 #ifdef RED
-      ear_set_led_rgb888(&ears, i, j, 255, 0, 0);
+      platform_set_led_rgb888(i, j, 255, 0, 0);
 #endif
     }
   }
@@ -145,9 +145,9 @@ void app_main(void) {
       sensor_result_t humidity;
       sensor_result_t pressure;
       sensor_result_t iaq;
-      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_ILLUMINANCE, &lux, sizeof(lux)));
+      ESP_ERROR_CHECK(platform_get_sensor_result(SENSOR_PARAM_ILLUMINANCE, &lux, sizeof(lux)));
       ESP_LOGI("BH1750", "%.4f Lux", lux);
-      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_BFIELD, magneto, sizeof(magneto)));
+      ESP_ERROR_CHECK(platform_get_sensor_result(SENSOR_PARAM_BFIELD, magneto, sizeof(magneto)));
       ESP_LOGI("LIS3MDL", "X: %f", magneto[0]);
       ESP_LOGI("LIS3MDL", "Y: %f", magneto[1]);
       ESP_LOGI("LIS3MDL", "Z: %f", magneto[2]);
@@ -156,14 +156,14 @@ void app_main(void) {
       float angle = atanf(x / y) / M_PI * 180.0;
       ESP_LOGI("LIS3MDL", "Angle: %.3f\n", angle);
 
-      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_TEMPERATURE, &temperature, sizeof(temperature)));
-      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_HUMIDITY, &humidity, sizeof(humidity)));
-      ESP_ERROR_CHECK(sensors_get_result(&sensors, SENSOR_PARAM_PRESSURE, &pressure, sizeof(pressure)));
+      ESP_ERROR_CHECK(platform_get_sensor_result(SENSOR_PARAM_TEMPERATURE, &temperature, sizeof(temperature)));
+      ESP_ERROR_CHECK(platform_get_sensor_result(SENSOR_PARAM_HUMIDITY, &humidity, sizeof(humidity)));
+      ESP_ERROR_CHECK(platform_get_sensor_result(SENSOR_PARAM_PRESSURE, &pressure, sizeof(pressure)));
       ESP_LOGI("BME680", "Temperature: %.2f °C", temperature);
       ESP_LOGI("BME680", "R. Humidity: %.2f %%", humidity);
       ESP_LOGI("BME680", "Pressure: %.2f hPa", pressure / 100.0);
-      if(sensors_has_sensor(&sensors, SENSOR_PARAM_IAQ)) {
-        sensors_get_result(&sensors, SENSOR_PARAM_IAQ, &iaq, sizeof(iaq));
+      if(platform_has_sensor(&sensors, SENSOR_PARAM_IAQ)) {
+        platform_get_sensor_result(SENSOR_PARAM_IAQ, &iaq, sizeof(iaq));
         ESP_LOGI("BME680", "IAQ: %.2f", iaq);
       }
       for(int i = 0; i < ears.chain_len; i++) {
@@ -176,7 +176,7 @@ void app_main(void) {
       for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
         uint8_t r, g, b;
         fast_hsv2rgb_32bit((offset + (i * NUM_LEDS_PER_EAR * steps_per_led) + j * steps_per_led) % HSV_HUE_STEPS, HSV_SAT_MAX, HSV_VAL_MAX, &r, &g, &b);
-        ear_set_led_rgb888(&ears, i, j, r, g, b);
+        platform_set_led_rgb888(i, j, r, g, b);
       }
     }
     offset += 10;
