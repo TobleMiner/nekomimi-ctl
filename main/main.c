@@ -29,9 +29,11 @@
 
 
 //#define DIM 50
-#define SELF_TEST
+//#define SELF_TEST
 //#define UV
-#define COLOR_WHEEL
+#define UV_STROBE
+//#define COLOR_STROBE
+//#define COLOR_WHEEL
 //#define WHITE
 //#define RED
 
@@ -182,6 +184,28 @@ void app_main(void) {
     offset += 10;
     if(offset >= HSV_HUE_MAX) {
       offset = 0;
+    }
+#endif
+#ifdef UV_STROBE
+    for(int i = 0; i < ears.chain_len; i++) {
+      for(int j = 0; j < NUM_UV_PER_EAR; j++) {
+        if(count % 20 < 2) {
+          platform_set_led_uv8(i, j, 0xFF);
+        } else {
+          platform_set_led_uv8(i, j, 0x00);
+        }
+      }
+    }
+#endif
+#ifdef COLOR_STROBE
+    for(int i = 0; i < ears.chain_len; i++) {
+      for(int j = 0; j < NUM_LEDS_PER_EAR; j++) {
+        if(count % 20 == 0) {
+          platform_set_led_rgb888(i, j, 255, 0, 0);
+        } else if(count % 20 == 10) {
+          platform_set_led_rgb888(i, j, 0, 0, 255);
+        }
+      }
     }
 #endif
     vTaskDelay(25 / portTICK_PERIOD_MS);
