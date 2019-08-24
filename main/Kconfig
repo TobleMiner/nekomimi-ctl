@@ -188,4 +188,18 @@ menu "Nekomimi"
 
   endmenu
 
+  menu "WiFi"
+
+  config NEKOMIMI_WIFI_ENABLE
+    bool "Enable WiFi"
+    default y
+
+  config NEKOMIMI_WIFI_SSID
+    string "WiFi SSID"
+    default "Nekomimi"
+
+  config NEKOMIMI_WIFI_PSK
+    string "WiFi PSK"
+    default "admintoorroot"
+  endmenu
 endmenu
