@@ -29,11 +29,11 @@
 
 
 //#define DIM 50
-//#define SELF_TEST
+#define SELF_TEST
 //#define UV
-#define UV_STROBE
+//#define UV_STROBE
 //#define COLOR_STROBE
-//#define COLOR_WHEEL
+#define COLOR_WHEEL
 //#define WHITE
 //#define RED
 
