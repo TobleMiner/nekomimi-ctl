@@ -24,6 +24,11 @@
 #include "bme680_sensor.h"
 #include "bh1750_sensor.h"
 #include "platform.h"
+#include "wifi.h"
+#include "random.h"
+#include "flash.h"
+#include "ip.h"
+#include "httpd.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -66,7 +71,30 @@ static void illuminance_cb(struct sensor_manager* mgr, struct sensor* sensor, se
 //  ESP_LOGI("ILLUMINANCE_CB", "Got illuminance CB: %f", *res);
 }
 
+static char* unknown_mode = "unknown mode";
+
+static esp_err_t mode_template_cb(void* ctx, void* priv, struct templ_slice* slice) {
+  return httpd_template_write(ctx, unknown_mode, strlen(unknown_mode));
+}
+
 void app_main(void) {
+  ESP_LOGI("WIFI", "Initializing IP stack");
+  ESP_ERROR_CHECK(ip_stack_init());
+  ESP_LOGI("WIFI", "Initializing wifi stack");
+  ESP_ERROR_CHECK(wifi_init());
+  struct fatfs* fs;
+  ESP_LOGI("FATFS", "Initializing file system");
+  ESP_ERROR_CHECK(flash_fatfs_alloc(&fs, "storage", "/flash"));
+
+  ESP_LOGI("HTTPD", "Starting http server");
+  struct httpd* httpd;
+  ESP_ERROR_CHECK(httpd_alloc(&httpd, "/flash/srv/http", 256));
+  ESP_ERROR_CHECK(httpd_add_template(httpd, "mode", mode_template_cb, NULL));
+  ESP_ERROR_CHECK(httpd_add_redirect(httpd, "/", "/index.html"));
+
+  ESP_LOGI("WIFI", "Starting AP");
+  ESP_ERROR_CHECK(wifi_ap_start(WIFI_SSID, WIFI_PSK));
+
   ESP_ERROR_CHECK(platform_init());
 
   // Sensors
