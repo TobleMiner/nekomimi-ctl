@@ -1,7 +1,7 @@
 #ifndef _HTTPD_H_
 #define _HTTPD_H_
 
-#include <http_server.h>
+#include <esp_http_server.h>
 
 #include "esp_err.h"
 
