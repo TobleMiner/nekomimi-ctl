@@ -8,7 +8,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <math.h>
-#include <driver/ledc.h> 
+#include <driver/ledc.h>
 #include <driver/spi_master.h>
 #include <driver/i2c.h>
 #include <string.h>
@@ -65,7 +65,7 @@ void gpio_output(uint8_t gpio) {
     doc##_g = (val);\
     doc##_b = (val);\
   } while (0);
-  
+
 
 static void illuminance_cb(struct sensor_manager* mgr, struct sensor* sensor, sensor_param_t param, sensor_result_t* res, size_t len, void* priv) {
 //  ESP_LOGI("ILLUMINANCE_CB", "Got illuminance CB: %f", *res);
