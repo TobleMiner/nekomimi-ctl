@@ -29,6 +29,8 @@
 #include "flash.h"
 #include "ip.h"
 #include "httpd.h"
+#include "pattern.h"
+#include "pattern_color_wheel.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -77,6 +79,35 @@ static esp_err_t mode_template_cb(void* ctx, void* priv, struct templ_slice* sli
   return httpd_template_write(ctx, unknown_mode, strlen(unknown_mode));
 }
 
+struct pattern_def* patterns[] = {
+  &pattern_cw_def,
+  NULL,
+};
+
+static const char* option_start = "<option>";
+static const char* option_end = "</option>\n\r";
+
+static esp_err_t patterns_template_cb(void* ctx, void* priv, struct templ_slice* slice) {
+  esp_err_t err = 0;
+  int i = 0;
+  while(patterns[i] != NULL) {
+    struct pattern_def* pat = patterns[i];
+    if((err = httpd_template_write(ctx, option_start, strlen(option_start)))) {
+      goto fail;
+    }
+    if((err = httpd_template_write(ctx, pat->name, strlen(pat->name)))) {
+      goto fail;
+    }
+    if((err = httpd_template_write(ctx, option_end, strlen(option_end)))) {
+      goto fail;
+    }
+    i++;
+  }
+fail:
+  return err;
+}
+
+
 void app_main(void) {
   ESP_LOGI("WIFI", "Initializing IP stack");
   ESP_ERROR_CHECK(ip_stack_init());
@@ -91,6 +122,7 @@ void app_main(void) {
   ESP_LOGI("HTTPD", "Starting http server");
   struct httpd* httpd;
   ESP_ERROR_CHECK(httpd_alloc(&httpd, "/flash/srv/http", 256));
+  ESP_ERROR_CHECK(httpd_add_template(httpd, "ears.patterns", patterns_template_cb, NULL));
   ESP_ERROR_CHECK(httpd_add_template(httpd, "mode", mode_template_cb, NULL));
   ESP_ERROR_CHECK(httpd_add_redirect(httpd, "/", "/index.html"));
   ESP_ERROR_CHECK(httpd_add_static_path(httpd, "/flash/srv/http"));

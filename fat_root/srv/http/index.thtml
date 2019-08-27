@@ -21,5 +21,10 @@
         </div>
       </form>
     </div>
+    <div class="container">
+      <select>
+        [/{ears.patterns}/]
+      </select>
+    </div>
   </body>
 </html>
