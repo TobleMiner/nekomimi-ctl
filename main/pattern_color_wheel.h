@@ -7,7 +7,8 @@
 
 struct pattern_cw {
   struct pattern pat;
-  uint32_t pos;
+  int pos;
+  int steps_per_led;
 };
 
 extern struct pattern_def pattern_cw_def;

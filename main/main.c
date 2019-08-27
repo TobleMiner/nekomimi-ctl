@@ -40,7 +40,7 @@
 //#define UV
 //#define UV_STROBE
 //#define COLOR_STROBE
-#define COLOR_WHEEL
+//#define COLOR_WHEEL
 //#define WHITE
 //#define RED
 
@@ -74,6 +74,8 @@ static void illuminance_cb(struct sensor_manager* mgr, struct sensor* sensor, se
 }
 
 static char* unknown_mode = "unknown mode";
+
+struct pattern* pattern;
 
 static esp_err_t mode_template_cb(void* ctx, void* priv, struct templ_slice* slice) {
   return httpd_template_write(ctx, unknown_mode, strlen(unknown_mode));
@@ -136,6 +138,8 @@ void app_main(void) {
   ESP_ERROR_CHECK(platform_subscribe_sensor(SENSOR_PARAM_ILLUMINANCE, illuminance_cb, NULL));
 
   // EARS
+  ESP_ERROR_CHECK(pattern_alloc(&pattern, patterns[0]));
+
 
   printf("Size of TLC GS is %zu bytes\n", sizeof(struct tlc_gs));
   printf("Size of TLC CTL is %zu bytes\n", sizeof(struct tlc_ctl));
@@ -271,6 +275,7 @@ void app_main(void) {
       }
     }
 #endif
+    pattern_step(pattern, 10);
     vTaskDelay(25 / portTICK_PERIOD_MS);
     count += 1;
     count %= 40;
