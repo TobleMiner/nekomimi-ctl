@@ -93,6 +93,7 @@ void app_main(void) {
   ESP_ERROR_CHECK(httpd_alloc(&httpd, "/flash/srv/http", 256));
   ESP_ERROR_CHECK(httpd_add_template(httpd, "mode", mode_template_cb, NULL));
   ESP_ERROR_CHECK(httpd_add_redirect(httpd, "/", "/index.html"));
+  ESP_ERROR_CHECK(httpd_add_static_path(httpd, "/flash/srv/http"));
 
   ESP_LOGI("WIFI", "Starting AP");
   ESP_ERROR_CHECK(wifi_ap_start(WIFI_SSID, WIFI_PSK));
