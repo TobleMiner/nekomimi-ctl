@@ -82,6 +82,8 @@ void app_main(void) {
   ESP_ERROR_CHECK(ip_stack_init());
   ESP_LOGI("WIFI", "Initializing wifi stack");
   ESP_ERROR_CHECK(wifi_init());
+  ESP_LOGI("NVS", "Initializing NVS");
+  ESP_ERROR_CHECK(flash_nvs_init());
   struct fatfs* fs;
   ESP_LOGI("FATFS", "Initializing file system");
   ESP_ERROR_CHECK(flash_fatfs_alloc(&fs, "storage", "/flash"));
