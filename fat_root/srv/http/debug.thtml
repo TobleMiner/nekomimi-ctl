@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	[/{include,file=include/resources.html}/]
+    <title>[/{title,a=b,c=d}/]</title>
+  </head>
+  <body>
+    <span>[/{content}/]</span>
+  </body>
+</html>
