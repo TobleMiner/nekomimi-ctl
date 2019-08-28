@@ -6,7 +6,13 @@ BOSCH_BSEC := "https://ae-bst.resource.bosch.com/media/_tech/media/bsec/BSEC_1.4
 BME_NONFREE := bme680_nonfree
 BSEC_PATH := $(BME_NONFREE)/BSEC.zip
 BSEC_DIR := $(BME_NONFREE)/BSEC
-BUILD_RELPATH := ../build/$(COMPONENT_NAME)/
+BUILD_RELPATH := ../build/$(COMPONENT_NAME)
+PROJECT_RELPATH := ../..
+MKFATFS_SUBMODULE := $(PROJECT_RELPATH)/mk_esp32fat
+MKFATFS=$(MKFATFS_SUBMODULE)/mkfatfs
+FATFS_ROOT := $(PROJECT_RELPATH)/fat_root
+FATFS_IMG := fatfs.img
+PARTITION_TABLE := ../partitions.bin
 
 ifeq ($(CONFIG_NEKOMIMI_BME680_ALGO_PROPRIETARY),y)
 	bsec=$(shell mkdir -p $(BME_NONFREE); unzip -t "$(BSEC_PATH)" 2> /dev/null || wget "$(BOSCH_BSEC)" -O "$(BSEC_PATH)"; [ -e $(BSEC_DIR) ] || unzip "$(BSEC_PATH)" -d "$(BSEC_DIR)")
@@ -25,6 +31,9 @@ ifeq ($(CONFIG_NEKOMIMI_BME680_ALGO_FREE),y)
 	COMPONENT_SRCDIRS += bme680_free
 endif
 
+pwd :=$(shell env > /tmp/pwd)
+mkfatfs := $(shell LDFLAGS='' AR='' CFLAGS='' CXXFLAGS='' CPPFLAGS='' CC='' CXX='' CPP='' make -C "$(MKFATFS_SUBMODULE)" all \# $(pwd))
+fatfs := $(shell "$(MKFATFS)" -c "$(FATFS_ROOT)" -t "$(PARTITION_TABLE)" "$(FATFS_IMG)")
 
 clean: clean_bsec
 
