@@ -2,29 +2,21 @@
 <html>
   <head>
     [/{include,file=include/resources.html}/]
-    <title>[/{title}/]</title>
+    <title>😺 Nekomimi</title>
   </head>
   <body>
-    <iframe name="dummyframe" width="0" height="0" border="0" style="display: none;"></iframe>
-    <div class="fixed-top sticky-top">
-      <div class="container">
-        <span class="badge badge-info"> Text display goes here</span>
+    <div class="container">
+      <h2>Nekomimi control</h2>
+      <div class="form-group">
+        <label for="pattern_select">LED pattern</label>
+        <select id="pattern_select" class="form-control" onchange="changePattern()">
+          [/{ears.patterns}/]
+        </select>
       </div>
-    </div>
-    <div class="container">
-      <form method="get" action="/api/set_text" target="dummyframe">
-        <div class="form-group">
-          <input type="text" id="text" name="text" value="[/{badge.text}/]" class="form-control">
-        </div>
-        <div class="form-group">
-          <button type="submit" class="btn btn-primary">Set text</button>
-        </div>
-      </form>
-    </div>
-    <div class="container">
-      <select>
-        [/{ears.patterns}/]
-      </select>
+      <div class="form-check">
+        <input id="led_test" type="checkbox" class="form-check-input" onchange="changeLedTest()">
+        <label for="led_test" class="form-check-label">Enable powerup LED test</label>
+      </div>
     </div>
   </body>
 </html>

@@ -88,15 +88,17 @@ struct pattern_def* patterns[] = {
   NULL,
 };
 
-static const char* option_start = "<option>";
+static const char* option_start = "<option value=\"%d\" %s>";
 static const char* option_end = "</option>\n\r";
 
 static esp_err_t patterns_template_cb(void* ctx, void* priv, struct templ_slice* slice) {
   esp_err_t err = 0;
   int i = 0;
+  char strbuf[32];
   while(patterns[i] != NULL) {
     struct pattern_def* pat = patterns[i];
-    if((err = httpd_template_write(ctx, option_start, strlen(option_start)))) {
+    snprintf(strbuf, sizeof(strbuf), option_start, i, pat == pattern->def ? "selected" : "");
+    if((err = httpd_template_write(ctx, strbuf, strlen(strbuf)))) {
       goto fail;
     }
     if((err = httpd_template_write(ctx, pat->name, strlen(pat->name)))) {
