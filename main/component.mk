@@ -31,8 +31,7 @@ ifeq ($(CONFIG_NEKOMIMI_BME680_ALGO_FREE),y)
 	COMPONENT_SRCDIRS += bme680_free
 endif
 
-pwd :=$(shell env > /tmp/pwd)
-mkfatfs := $(shell LDFLAGS='' AR='' CFLAGS='' CXXFLAGS='' CPPFLAGS='' CC='' CXX='' CPP='' make -C "$(MKFATFS_SUBMODULE)" all \# $(pwd))
+mkfatfs := $(shell LDFLAGS='' AR='' CFLAGS='' CXXFLAGS='' CPPFLAGS='' CC='' CXX='' CPP='' make -C "$(MKFATFS_SUBMODULE)" all)
 fatfs := $(shell "$(MKFATFS)" -c "$(FATFS_ROOT)" -t "$(PARTITION_TABLE)" "$(FATFS_IMG)")
 
 clean: clean_bsec
