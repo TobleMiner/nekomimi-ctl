@@ -25,7 +25,7 @@ bool wifi_enabled() {
 
 esp_err_t wifi_init(void) {
   esp_err_t err;
-  
+
   wifi.event_group = xEventGroupCreate();
   if(!wifi.event_group) {
     err = ESP_ERR_NO_MEM;

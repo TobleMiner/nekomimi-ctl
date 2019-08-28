@@ -429,7 +429,7 @@ static esp_err_t redirect_handler(httpd_req_t* req) {
   if((err = httpd_resp_set_hdr(req, "Location", hndlr->location))) {
     goto fail;
   }
-  
+
   printf("httpd: Delivering redirect to %s\n", hndlr->location);
 
   httpd_resp_send_chunk(req, NULL, 0);
@@ -594,7 +594,7 @@ esp_err_t httpd_send_error(struct httpd_request_ctx* ctx, const char* status) {
 
 /*
 static esp_err_t httpd_parse_form_data(struct httpd_request_ctx* ctx) {
-  
+
 }
 */
 
@@ -673,7 +673,7 @@ esp_err_t httpd_add_handler(struct httpd* httpd, httpd_method_t method, char* pa
   hndlr->handler.uri_handler.user_ctx = hndlr;
   hndlr->handler.uri_handler.method = method;
   hndlr->handler.uri_handler.uri = uri;
-  
+
   hndlr->required_keys = calloc(num_param + 1, sizeof(char*));
   if(!hndlr->required_keys) {
     err = ESP_ERR_NO_MEM;

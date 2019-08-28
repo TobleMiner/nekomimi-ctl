@@ -148,7 +148,7 @@ static esp_err_t http_get_api_set_pattern(struct httpd_request_ctx* ctx, void* p
   }
 
   if((err = set_pattern(patterns[pattern_id]))) {
-    return httpd_send_error(ctx, HTTPD_500);    
+    return httpd_send_error(ctx, HTTPD_500);
   }
 
   httpd_finalize_request(ctx);

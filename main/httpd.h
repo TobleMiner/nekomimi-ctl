@@ -55,7 +55,7 @@ struct httpd_static_file_handler {
 
 struct httpd_redirect_handler {
   struct httpd_handler handler;
-  char* location;	
+  char* location;
 };
 
 typedef uint8_t httpd_request_ctx_flags;

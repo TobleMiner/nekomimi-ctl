@@ -20,7 +20,7 @@ void futil_normalize_path(char* path) {
 esp_err_t futil_relpath(char* path, char* basepath) {
   size_t base_len = strlen(basepath);
   size_t path_len = strlen(path);
-  
+
   if(base_len > path_len) {
     return ESP_ERR_INVALID_ARG;
   }

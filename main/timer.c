@@ -15,7 +15,7 @@ esp_err_t system_timer_init(struct system_timer* timer, uint64_t interval_ns, ti
   if(interval_ns != TIMER_DIVIDER_TO_INTERVAL_NS(conf.divider)) {
     return ESP_ERR_INVALID_ARG;
   }
-  
+
   timer->tick_interval_ns = interval_ns;
   timer->group = timer_group;
   timer->id = timer_id;
@@ -30,7 +30,7 @@ esp_err_t system_timer_init(struct system_timer* timer, uint64_t interval_ns, ti
   err = timer_set_alarm_value(timer_group, timer_id, ULLONG_MAX / divider);
   if(err) {
     return err;
-  }  
+  }
   return timer_start(timer_group, timer_id);
 }
 

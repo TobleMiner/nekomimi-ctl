@@ -31,7 +31,7 @@
     for(i = 0; i < _len / 2; i++) swp(((_arr)[i]), ((_arr)[_len - i - 1])); \
   } while(0)
 
-            
+
 #define ARRAY_LEN(_arr) (sizeof((_arr)) / sizeof(*(_arr)))
 
 #define DIRENT_FOR_EACH(cursor, dir) \

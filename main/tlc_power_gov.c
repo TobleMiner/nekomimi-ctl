@@ -41,13 +41,13 @@ uint16_t tlc_power_gov_current_power_mw(struct tlc_power_gov* gov) {
     current_color *= (uint64_t)tlc_ctl_get_mcr_ua(gov->ctl, color);
     // Calculate bc only once per color
     current_color *= (10ULL + 90ULL * (uint64_t)tlc_ctl_get_bc(gov->ctl, color) / 127ULL);
-    current_total_ua += current_color; 
+    current_total_ua += current_color;
   }
   // Remove dot control and brightness control factor
   current_total_ua /= 100000ULL;
   // Remove PWM factor
   current_total_ua /= 65536ULL;
-  
+
   return (uint16_t)((uint64_t)current_total_ua * (uint64_t)gov->voltage_mv / 1000000ULL);
 }
 

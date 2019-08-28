@@ -34,7 +34,7 @@ static void bh1750_service_task(void* arg) {
 esp_err_t bh1750_service_init(struct bh1750_service* service, struct i2c_bus* bus, uint8_t i2c_addr) {
   esp_err_t err;
   memset(service, 0, sizeof(*service));
-  
+
   err = bh1750_init(&service->bh, bus, i2c_addr);
   if(err) {
     ESP_LOGE(BH1750_SERVICE_TAG, "Failed to initilalize bh1750");
@@ -59,7 +59,7 @@ esp_err_t bh1750_service_init(struct bh1750_service* service, struct i2c_bus* bu
 fail_mutex:
   vSemaphoreDelete(service->lock);
 fail:
-  return err;  
+  return err;
 }
 
 float bh1750_service_get_illuminance(struct bh1750_service* service) {

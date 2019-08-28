@@ -248,7 +248,7 @@ next:
 
           // Read more
           filepos = text_slice_end;
-          ring->ptr_read = last_template;	
+          ring->ptr_read = last_template;
           if(read_len == 0 || ring_available(ring) >= max_id_len + TEMPLATE_MAX_ARG_LEN + suffix_len) {
             // There is no terminator / the argument list is too long
             err = -EINVAL;

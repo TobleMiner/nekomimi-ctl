@@ -136,6 +136,6 @@ esp_err_t sensors_report_result(struct sensor* sensor, sensor_param_t param, sen
     }
   }
   xSemaphoreGive(mgr->lock);
-  
+
   return ESP_OK;
 }

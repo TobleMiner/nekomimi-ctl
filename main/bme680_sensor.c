@@ -84,8 +84,8 @@ static void bme680_sensor_cb(void* priv) {
 #else
   sensor_param_t params[] = { SENSOR_PARAM_TEMPERATURE, SENSOR_PARAM_HUMIDITY, SENSOR_PARAM_PRESSURE };
 #endif
-  
-  for(i = 0; i < ARRAY_LEN(params); i++) { 
+
+  for(i = 0; i < ARRAY_LEN(params); i++) {
     bme680_sensor_ready(sensor, params[i], &ready);
     if(ready) {
       bme680_sensor_get(sensor, params[i], &res, sizeof(res));

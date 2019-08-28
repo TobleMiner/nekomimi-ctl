@@ -60,7 +60,7 @@ static esp_err_t tlc_pwm_init(int gpio) {
     .bit_num    = 2,
     .freq_hz    = PWM_SPEED
   };
- 
+
   ledc_channel_config_t ledc_channel = {
     .channel    = LEDC_CHANNEL_0,
     .gpio_num   = gpio,
@@ -93,7 +93,7 @@ static esp_err_t tlc_gpio_init(int gpio_latch) {
 
 static esp_err_t tlc_spi_init(struct tlc_chain* tlc, spi_host_device_t spi) {
   esp_err_t err;
-  
+
   // Initialize SPI
   spi_bus_config_t buscfg = {
     .miso_io_num = 12,
@@ -238,11 +238,11 @@ esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_
 
   ESP_LOGI(TLC_TAG, "Enabling VCC0\n");
   tlc_gpio_init(22);
-  HI(22);	
+  HI(22);
 
   ESP_LOGI(TLC_TAG, "Enabling VCC1\n");
   tlc_gpio_init(27);
-  HI(27);	
+  HI(27);
 
   if((err = esp_timer_create(&timer_args, &tlc->timer))) {
     goto fail;
@@ -282,7 +282,7 @@ esp_err_t tlc_init(struct tlc_chain* tlc, size_t len, int gpio_pwmclk, int gpio_
     err = ESP_ERR_NO_MEM;
     goto fail_pwr_gov;
   }
-  
+
   tlc->chain_len = len;
 
   if((err = tlc_pwm_init(gpio_pwmclk))) {

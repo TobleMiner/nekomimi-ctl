@@ -158,7 +158,7 @@ esp_err_t lis3mdl_init(struct lis3mdl* lis, struct i2c_bus* i2c_bus, uint8_t i2c
     ESP_LOGE(LIS3MDL_TAG, "Failed to reset lis3mdl");
     return err;
   }
-  
+
   err = lis3mdl_read_reg(lis, LIS3MDL_REG_WHO_AM_I, &id);
   if(err) {
     ESP_LOGE(LIS3MDL_TAG, "Failed to read lis3mdl id");
