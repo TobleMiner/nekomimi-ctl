@@ -31,6 +31,7 @@
 #include "httpd.h"
 #include "pattern.h"
 #include "pattern_color_wheel.h"
+#include "pattern_police.h"
 
 #include "fast_hsv2rgb.h"
 
@@ -83,6 +84,7 @@ static esp_err_t mode_template_cb(void* ctx, void* priv, struct templ_slice* sli
 
 struct pattern_def* patterns[] = {
   &pattern_cw_def,
+  &pattern_police_def,
   NULL,
 };
 
@@ -109,6 +111,50 @@ fail:
   return err;
 }
 
+static size_t num_patterns() {
+  size_t i = 0;
+  while(patterns[i++]);
+  return i;
+}
+
+static esp_err_t set_pattern(struct pattern_def* def) {
+  struct pattern* pat;
+  struct pattern* old_pat;
+  esp_err_t err = pattern_alloc(&pat, def);
+  if(err) {
+    return err;
+  }
+  old_pat = pattern;
+  pattern = pat;
+  if(old_pat) {
+    pattern_free(old_pat);
+  }
+  return ESP_OK;
+}
+
+static esp_err_t http_get_api_set_pattern(struct httpd_request_ctx* ctx, void* priv) {
+	esp_err_t err;
+	ssize_t param_len;
+  int pattern_id;
+  char* value;
+
+	if((param_len = httpd_query_string_get_param(ctx, "pattern", &value)) <= 0) {
+		return httpd_send_error(ctx, HTTPD_400);
+	}
+
+  pattern_id = atoi(value);
+  if(pattern_id < 0 || pattern_id >= num_patterns()) {
+		return httpd_send_error(ctx, HTTPD_400);
+  }
+
+  if((err = set_pattern(patterns[pattern_id]))) {
+		return httpd_send_error(ctx, HTTPD_500);    
+  }
+
+	httpd_finalize_request(ctx);
+
+  return ESP_OK;
+}
 
 void app_main(void) {
   ESP_LOGI("WIFI", "Initializing IP stack");
@@ -128,6 +174,7 @@ void app_main(void) {
   ESP_ERROR_CHECK(httpd_add_template(httpd, "mode", mode_template_cb, NULL));
   ESP_ERROR_CHECK(httpd_add_redirect(httpd, "/", "/index.html"));
   ESP_ERROR_CHECK(httpd_add_static_path(httpd, "/flash/srv/http"));
+	ESP_ERROR_CHECK(httpd_add_get_handler(httpd, "/api/set_pattern", http_get_api_set_pattern, NULL, 1, "pattern"));
 
   ESP_LOGI("WIFI", "Starting AP");
   ESP_ERROR_CHECK(wifi_ap_start(WIFI_SSID, WIFI_PSK));
@@ -138,7 +185,7 @@ void app_main(void) {
   ESP_ERROR_CHECK(platform_subscribe_sensor(SENSOR_PARAM_ILLUMINANCE, illuminance_cb, NULL));
 
   // EARS
-  ESP_ERROR_CHECK(pattern_alloc(&pattern, patterns[0]));
+  ESP_ERROR_CHECK(set_pattern(patterns[0]));
 
 
   printf("Size of TLC GS is %zu bytes\n", sizeof(struct tlc_gs));
