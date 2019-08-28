@@ -46,7 +46,7 @@ esp_err_t i2c_bus_cmd_begin(struct i2c_bus* bus, i2c_cmd_handle_t handle, TickTy
 void i2c_detect(struct i2c_bus* bus) {
   ESP_LOGI(TAG_I2CDETECT, "Scanning i2c bus %d for devices", bus->i2c_port);
   for(uint8_t i = 0; i < 127; i++) {
-  	esp_err_t err;
+    esp_err_t err;
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     if(!cmd) {
       err = ESP_ERR_NO_MEM;

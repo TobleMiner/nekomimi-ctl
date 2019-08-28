@@ -11,7 +11,7 @@
 
 // Private API
 static esp_err_t bh1750_cmd(struct bh1750* bh, uint8_t bhcmd) {
-	esp_err_t err;
+  esp_err_t err;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;
@@ -60,7 +60,7 @@ static esp_err_t bh1750_reset(struct bh1750* bh) {
 
 static esp_err_t bh1750_read_result(struct bh1750* bh, uint16_t* res) {
   uint8_t tmp[2];
-	esp_err_t err;
+  esp_err_t err;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;

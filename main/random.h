@@ -6,7 +6,7 @@
 #define RANDOM_HEADERS_AVAIL 1
 
 struct random {
-	bool initialized;
+  bool initialized;
 };
 
 bool random_initialized();

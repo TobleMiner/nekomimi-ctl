@@ -8,12 +8,12 @@
 #include "esp_system.h"
 
 struct flash {
-	bool nvs_initialized;
+  bool nvs_initialized;
 };
 
 struct fatfs {
-	char* base_path;
-	wl_handle_t wl_handle;
+  char* base_path;
+  wl_handle_t wl_handle;
 };
 
 esp_err_t flash_nvs_init();

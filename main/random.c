@@ -15,24 +15,24 @@ static struct random random = { 0 };
 
 void random_enable() {
 #if RANDOM_HEADERS_AVAIL
-	bootloader_random_enable();
-	random.initialized = true;
+  bootloader_random_enable();
+  random.initialized = true;
 #endif
 }
 
 void random_disable() {
 #if RANDOM_HEADERS_AVAIL
-	bootloader_random_disable();
-	random.initialized = false;
+  bootloader_random_disable();
+  random.initialized = false;
 #endif
 }
 
 bool random_initialized() {
-	return random.initialized || wifi.enabled;
+  return random.initialized || wifi.enabled;
 }
 
 uint32_t random_uint32() {
-	return esp_random();
+  return esp_random();
 };
 
 

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 struct ip_stack {
-	bool initialized;
+  bool initialized;
 };
 
 esp_err_t ip_stack_init();

@@ -11,7 +11,7 @@
 
 // Private API
 static esp_err_t bme680_write_reg(struct bme680* bme, uint8_t reg, uint8_t* val, size_t len) {
-	esp_err_t err;
+  esp_err_t err;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;
@@ -40,7 +40,7 @@ fail:
 }
 
 static esp_err_t bme680_read_reg(struct bme680* bme, uint8_t reg, uint8_t* val, size_t len) {
-	esp_err_t err;
+  esp_err_t err;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;

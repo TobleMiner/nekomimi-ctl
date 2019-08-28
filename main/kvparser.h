@@ -9,8 +9,8 @@
 #include "list.h"
 
 enum {
-	KV_STATE_TOKEN_SEP = 0,
-	KV_STATE_TOKEN_ASSIGN,
+  KV_STATE_TOKEN_SEP = 0,
+  KV_STATE_TOKEN_ASSIGN,
 };
 
 struct kvparser;
@@ -18,13 +18,13 @@ struct kvparser;
 typedef struct list_head kvlist;
 
 struct kvpair {
-	struct list_head list;
+  struct list_head list;
 
-	char* key;
-	size_t key_len;
+  char* key;
+  size_t key_len;
 
-	char* value;
-	size_t value_len;
+  char* value;
+  size_t value_len;
 };
 
 typedef ssize_t (*kv_str_processor)(char** retval, char* str, size_t len);
@@ -32,18 +32,18 @@ typedef ssize_t (*kv_str_processor)(char** retval, char* str, size_t len);
 typedef uint8_t kv_str_processor_flags;
 
 struct kv_str_processor_def {
-	kv_str_processor cb;
-	struct {
-		kv_str_processor_flags dyn_alloc:1;
-	} flags;
+  kv_str_processor cb;
+  struct {
+    kv_str_processor_flags dyn_alloc:1;
+  } flags;
 };
 
 struct kvparser {
-	char* sep;
-	char* assign;
+  char* sep;
+  char* assign;
 
-	struct kv_str_processor_def* key_processor;
-	struct kv_str_processor_def* value_processor;
+  struct kv_str_processor_def* key_processor;
+  struct kv_str_processor_def* value_processor;
 };
 
 struct kv_str_processor_def* kv_get_clone_str_proc();

@@ -8,7 +8,7 @@
 
 // Private API
 static esp_err_t lis3mdl_write_reg(struct lis3mdl* lis, uint8_t reg, uint8_t val) {
-	esp_err_t err;
+  esp_err_t err;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;
@@ -37,7 +37,7 @@ fail:
 }
 
 static esp_err_t lis3mdl_read_reg(struct lis3mdl* lis, uint8_t reg, uint8_t* val) {
-	esp_err_t err;
+  esp_err_t err;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;
@@ -72,7 +72,7 @@ fail:
 }
 
 static esp_err_t lis3mdl_read_result(struct lis3mdl* lis, struct lis3mdl_result* res) {
-	esp_err_t err;
+  esp_err_t err;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   if(!cmd) {
     err = ESP_ERR_NO_MEM;

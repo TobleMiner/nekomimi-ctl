@@ -133,25 +133,25 @@ static esp_err_t set_pattern(struct pattern_def* def) {
 }
 
 static esp_err_t http_get_api_set_pattern(struct httpd_request_ctx* ctx, void* priv) {
-	esp_err_t err;
-	ssize_t param_len;
+  esp_err_t err;
+  ssize_t param_len;
   int pattern_id;
   char* value;
 
-	if((param_len = httpd_query_string_get_param(ctx, "pattern", &value)) <= 0) {
-		return httpd_send_error(ctx, HTTPD_400);
-	}
+  if((param_len = httpd_query_string_get_param(ctx, "pattern", &value)) <= 0) {
+    return httpd_send_error(ctx, HTTPD_400);
+  }
 
   pattern_id = atoi(value);
   if(pattern_id < 0 || pattern_id >= num_patterns()) {
-		return httpd_send_error(ctx, HTTPD_400);
+    return httpd_send_error(ctx, HTTPD_400);
   }
 
   if((err = set_pattern(patterns[pattern_id]))) {
-		return httpd_send_error(ctx, HTTPD_500);    
+    return httpd_send_error(ctx, HTTPD_500);    
   }
 
-	httpd_finalize_request(ctx);
+  httpd_finalize_request(ctx);
 
   return ESP_OK;
 }
@@ -174,7 +174,7 @@ void app_main(void) {
   ESP_ERROR_CHECK(httpd_add_template(httpd, "mode", mode_template_cb, NULL));
   ESP_ERROR_CHECK(httpd_add_redirect(httpd, "/", "/index.html"));
   ESP_ERROR_CHECK(httpd_add_static_path(httpd, "/flash/srv/http"));
-	ESP_ERROR_CHECK(httpd_add_get_handler(httpd, "/api/set_pattern", http_get_api_set_pattern, NULL, 1, "pattern"));
+  ESP_ERROR_CHECK(httpd_add_get_handler(httpd, "/api/set_pattern", http_get_api_set_pattern, NULL, 1, "pattern"));
 
   ESP_LOGI("WIFI", "Starting AP");
   ESP_ERROR_CHECK(wifi_ap_start(WIFI_SSID, WIFI_PSK));

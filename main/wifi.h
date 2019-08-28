@@ -14,8 +14,8 @@
 #define WIFI_PASSWD_CHARS "AFHL073E2CWIUT4"
 
 struct wifi {
-	bool enabled;
-	EventGroupHandle_t event_group;
+  bool enabled;
+  EventGroupHandle_t event_group;
 };
 
 bool wifi_enabled();
