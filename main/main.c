@@ -32,12 +32,13 @@
 #include "pattern.h"
 #include "pattern_color_wheel.h"
 #include "pattern_police.h"
+#include "pattern_led_test.h"
 
 #include "fast_hsv2rgb.h"
 
 
 //#define DIM 50
-#define SELF_TEST
+//#define SELF_TEST
 //#define UV
 //#define UV_STROBE
 //#define COLOR_STROBE
@@ -85,6 +86,7 @@ static esp_err_t mode_template_cb(void* ctx, void* priv, struct templ_slice* sli
 struct pattern_def* patterns[] = {
   &pattern_cw_def,
   &pattern_police_def,
+  &pattern_led_test_def,
   NULL,
 };
 
