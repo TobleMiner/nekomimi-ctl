@@ -111,9 +111,9 @@ esp_err_t httpd_send_error(struct httpd_request_ctx* ctx, const char* status);
 	httpd_resp_send_chunk((ctx)->req, NULL, 0)
 
 #define httpd_add_get_handler(httpd, path, cb, priv, num_params, ...) \
-	httpd_add_handler(httpd, HTTP_GET, path, cb, priv, num_params, __VA_ARGS__);
+	httpd_add_handler(httpd, HTTP_GET, path, cb, priv, num_params, __VA_ARGS__)
 
 #define httpd_add_post_handler(httpd, path, cb, priv, num_params, ...) \
-	httpd_add_handler(httpd, HTTP_POST, path, cb, priv, num_params, __VA_ARGS__);
+	httpd_add_handler(httpd, HTTP_POST, path, cb, priv, num_params, __VA_ARGS__)
 
 #endif
