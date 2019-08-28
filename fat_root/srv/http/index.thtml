@@ -13,10 +13,6 @@
           [/{ears.patterns}/]
         </select>
       </div>
-      <div class="form-check">
-        <input id="led_test" type="checkbox" class="form-check-input" onchange="changeLedTest()">
-        <label for="led_test" class="form-check-label">Enable powerup LED test</label>
-      </div>
     </div>
   </body>
 </html>
