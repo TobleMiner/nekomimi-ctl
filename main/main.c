@@ -178,7 +178,7 @@ void app_main(void) {
   ESP_ERROR_CHECK(httpd_alloc(&httpd, "/flash/srv/http", 256));
   ESP_ERROR_CHECK(httpd_add_template(httpd, "ears.patterns", patterns_template_cb, NULL));
   ESP_ERROR_CHECK(httpd_add_template(httpd, "mode", mode_template_cb, NULL));
-  ESP_ERROR_CHECK(httpd_add_redirect(httpd, "/", "/index.html"));
+  ESP_ERROR_CHECK(httpd_add_redirect(httpd, "/", "/index.thtml"));
   ESP_ERROR_CHECK(httpd_add_static_path(httpd, "/flash/srv/http"));
   ESP_ERROR_CHECK(httpd_add_get_handler(httpd, "/api/set_pattern", http_get_api_set_pattern, NULL, 1, "pattern"));
 
