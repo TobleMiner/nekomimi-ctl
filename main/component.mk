@@ -3,6 +3,7 @@
 COMPONENT_SRCDIRS = . BME680_driver
 
 BOSCH_BSEC := "https://ae-bst.resource.bosch.com/media/_tech/media/bsec/BSEC_1.4.7.4_Generic_Release.zip"
+BSEC_SHA256 := d063e2af886656d51aa6787ae9975d932e297448e531a1692e93371a6e575042
 BME_NONFREE := bme680_nonfree
 BSEC_PATH := $(BME_NONFREE)/BSEC.zip
 BSEC_DIR := $(BME_NONFREE)/BSEC
@@ -15,7 +16,11 @@ FATFS_IMG := fatfs.img
 PARTITION_TABLE := ../partitions.bin
 
 ifeq ($(CONFIG_NEKOMIMI_BME680_ALGO_PROPRIETARY),y)
-	bsec=$(shell mkdir -p $(BME_NONFREE); unzip -t "$(BSEC_PATH)" 2> /dev/null || wget "$(BOSCH_BSEC)" -O "$(BSEC_PATH)"; [ -e $(BSEC_DIR) ] || unzip "$(BSEC_PATH)" -d "$(BSEC_DIR)")
+	bsec=$(shell mkdir -p $(BME_NONFREE); unzip -t "$(BSEC_PATH)" 2> /dev/null || \
+	wget --no-check-certificate "$(BOSCH_BSEC)" -O "$(BSEC_PATH)" && \
+	( [ "$$(sha256sum "$(BSEC_PATH)" | egrep -o '[0-9a-fA-F]{64}')" == $(BSEC_SHA256) ] || rm "$(BSEC_PATH)" ); \
+	[ -e $(BSEC_DIR) ] || unzip "$(BSEC_PATH)" -d "$(BSEC_DIR)")
+
 	bsec_algo=$(shell find "$(BSEC_DIR)" -name lite_version -type d \# $(bsec))
 	bsec_esp32=$(shell find "$(bsec_algo)" -name esp32 -type d)
 	bsec_lib=$(shell find "$(bsec_esp32)" -name libalgobsec.a -type f)
