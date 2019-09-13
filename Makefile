@@ -23,7 +23,7 @@ FATFS_OFFSET := 0x130000
 PARTITION_TABLE := $(BUILD_DIR)/partitions.bin
 
 $(MKFATFS): $(MKFATFS_SUBMODULE)
-	LDFLAGS='' AR='' CFLAGS='' CXXFLAGS='' CPPFLAGS='' CC='' CXX='' CPP='' make -C "$(MKFATFS_SUBMODULE)"
+	touch "$(MKFATFS_SUBMODULE)"/sdkconfig/sdkconfig.h && LDFLAGS='' AR='ar' CFLAGS='' CXXFLAGS='' CPPFLAGS='' CC='gcc' CXX='gcc' CPP='g++' SDKCONFIG="sdkconfig/sdkconfig.h" make -C "$(MKFATFS_SUBMODULE)"
 
 build_fatfs: $(MKFATFS)
 	"$(MKFATFS)" -c "$(FATFS_ROOT)" -t "$(PARTITION_TABLE)" "$(FATFS_IMG)"
